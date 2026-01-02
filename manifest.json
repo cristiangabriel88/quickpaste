@@ -1,7 +1,7 @@
 {
 	"manifest_version": 3,
 	"name": "QuickPaste",
-	"version": "1.01",
+	"version": "1.02",
 	"description": "Save text clips from websites as Notes in a Collection",
 	"permissions": [
 		"storage",
