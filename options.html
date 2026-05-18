@@ -11,79 +11,170 @@
 	<link rel="preconnect" href="https://fonts.googleapis.com">
 	<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 	<link
-		href="https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,100;0,200;0,300;0,400;1,100;1,200&display=swap"
+		href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300;9..144,400;9..144,500;9..144,600;9..144,700&family=Inter:wght@300;400;500;600;700&family=Sora:wght@300;400;500;600&display=swap"
 		rel="stylesheet">
 	<title>QuickPaste Options</title>
 </head>
 
 <body id="body">
-	<!--***** Shapes TOP *****-->
-	<div class="custom-shape-divider-top-1676369133">
-		<svg data-name="Layer 1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 120" preserveAspectRatio="none">
-			<path
-				d="M0,0V46.29c47.79,22.2,103.59,32.17,158,28,70.36-5.37,136.33-33.31,206.8-37.5C438.64,32.43,512.34,53.67,583,72.05c69.27,18,138.3,24.88,209.4,13.08,36.15-6,69.85-17.84,104.45-29.34C989.49,25,1113-14.29,1200,52.47V0Z"
-				opacity=".25" class="shape-fill"></path>
-			<path
-				d="M0,0V15.81C13,36.92,27.64,56.86,47.69,72.05,99.41,111.27,165,111,224.58,91.58c31.15-10.15,60.09-26.07,89.67-39.8,40.92-19,84.73-46,130.83-49.67,36.26-2.85,70.9,9.42,98.6,31.56,31.77,25.39,62.32,62,103.63,73,40.44,10.79,81.35-6.69,119.13-24.28s75.16-39,116.92-43.05c59.73-5.85,113.28,22.88,168.9,38.84,30.2,8.66,59,6.17,87.09-7.5,22.43-10.89,48-26.93,60.65-49.24V0Z"
-				opacity=".5" class="shape-fill"></path>
-			<path
-				d="M0,0V5.63C149.93,59,314.09,71.32,475.83,42.57c43-7.64,84.23-20.12,127.61-26.46,59-8.63,112.48,12.24,165.56,35.4C827.93,77.22,886,95.24,951.2,90c86.53-7,172.46-45.71,248.8-84.81V0Z"
-				class="shape-fill"></path>
-		</svg>
-	</div>
+	<aside class="activity-bar" aria-label="Activity Bar">
+		<button id="settingsToggle" class="activity-bar__item" type="button" aria-label="Settings"
+			aria-pressed="false" aria-controls="sidePanel" data-view="settings" title="Settings">
+			<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="22" height="22" fill="none"
+				stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+				<circle cx="12" cy="12" r="3"></circle>
+				<path
+					d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33h0a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51h0a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82v0a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z">
+				</path>
+			</svg>
+		</button>
+		<button id="aboutToggle" class="activity-bar__item" type="button" aria-label="About"
+			aria-pressed="false" aria-controls="sidePanel" data-view="about" title="About">
+			<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="22" height="22" fill="none"
+				stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+				<circle cx="12" cy="12" r="10"></circle>
+				<line x1="12" y1="16" x2="12" y2="12"></line>
+				<line x1="12" y1="8" x2="12.01" y2="8"></line>
+			</svg>
+		</button>
+	</aside>
 
-	<div class="container">
-		<div class="button-container d-flex justify-content-between align-items-center">
-			<h1 class="mr-auto">Options</h1>
-			<div class="homepage-container home-link">
-				<a href="https://cristiangabriel.dev/QuickPaste/index.html" target="_blank"><img
-						src="./icons/logo-with-text.png" alt="Logo" class="logo-image img-fluid ml-auto"></a>
-				<a href="https://cristiangabriel.dev/QuickPaste/index.html" target="_blank">
-					<h6 class="about-link">About V 1.1</h6>
-				</a>
+	<aside class="side-panel" id="sidePanel" aria-hidden="true" aria-label="Settings panel">
+		<div class="side-panel__header">
+			<span class="side-panel__title" id="sidePanelTitle">Settings</span>
+			<button id="sidePanelClose" class="side-panel__close" type="button" aria-label="Close panel"
+				title="Close">
+				<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16" fill="none"
+					stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+					aria-hidden="true">
+					<line x1="18" y1="6" x2="6" y2="18"></line>
+					<line x1="6" y1="6" x2="18" y2="18"></line>
+				</svg>
+			</button>
+		</div>
+		<div class="side-panel__content" data-view="settings">
+			<section class="setting-group">
+				<h3 class="setting-group__title">Notifications</h3>
+				<div class="setting-group__options">
+					<label class="setting-option">
+						<input type="radio" id="notifOn" name="notifOption" value="On">
+						<span>On</span>
+					</label>
+					<label class="setting-option">
+						<input type="radio" id="notifOff" name="notifOption" value="Off">
+						<span>Off</span>
+					</label>
+				</div>
+			</section>
+
+			<section class="setting-group">
+				<h3 class="setting-group__title">Auto-copy on save</h3>
+				<div class="setting-group__options">
+					<label class="setting-option">
+						<input type="radio" id="autoCopyOn" name="autoCopyOption" value="On">
+						<span>On</span>
+					</label>
+					<label class="setting-option">
+						<input type="radio" id="autoCopyOff" name="autoCopyOption" value="Off">
+						<span>Off</span>
+					</label>
+				</div>
+			</section>
+
+			<section class="setting-group">
+				<h3 class="setting-group__title">Appearance</h3>
+				<div class="setting-group__options">
+					<label class="setting-option">
+						<input type="radio" id="themeLight" name="themeOption" value="light">
+						<span>Light</span>
+					</label>
+					<label class="setting-option">
+						<input type="radio" id="themeDark" name="themeOption" value="dark">
+						<span>Dark</span>
+					</label>
+				</div>
+			</section>
+
+		</div>
+		<div class="side-panel__content" data-view="about" hidden>
+			<section class="setting-group">
+				<h3 class="setting-group__title">QuickPaste</h3>
+				<nav class="side-panel__links">
+					<a class="side-panel__link" href="https://cristiangabriel.dev/quickpaste/" target="_blank" rel="noopener noreferrer">
+						<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+							<circle cx="12" cy="12" r="10"></circle>
+							<line x1="12" y1="16" x2="12" y2="12"></line>
+							<line x1="12" y1="8" x2="12.01" y2="8"></line>
+						</svg>
+						<span>About</span>
+					</a>
+					<a class="side-panel__link" href="https://cristiangabriel.dev/" target="_blank" rel="noopener noreferrer">
+						<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+							<path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+							<circle cx="12" cy="7" r="4"></circle>
+						</svg>
+						<span>Developer</span>
+					</a>
+					<a class="side-panel__link" href="mailto:me@cristiangabriel.dev">
+						<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+							<path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
+							<polyline points="22,6 12,13 2,6"></polyline>
+						</svg>
+						<span>Contact</span>
+					</a>
+				</nav>
+			</section>
+		</div>
+	</aside>
+
+	<main class="main-area">
+		<!--***** Shapes TOP *****-->
+		<div class="custom-shape-divider-top-1676369133">
+			<svg data-name="Layer 1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 120" preserveAspectRatio="none">
+				<path
+					d="M0,0V46.29c47.79,22.2,103.59,32.17,158,28,70.36-5.37,136.33-33.31,206.8-37.5C438.64,32.43,512.34,53.67,583,72.05c69.27,18,138.3,24.88,209.4,13.08,36.15-6,69.85-17.84,104.45-29.34C989.49,25,1113-14.29,1200,52.47V0Z"
+					opacity=".25" class="shape-fill"></path>
+				<path
+					d="M0,0V15.81C13,36.92,27.64,56.86,47.69,72.05,99.41,111.27,165,111,224.58,91.58c31.15-10.15,60.09-26.07,89.67-39.8,40.92-19,84.73-46,130.83-49.67,36.26-2.85,70.9,9.42,98.6,31.56,31.77,25.39,62.32,62,103.63,73,40.44,10.79,81.35-6.69,119.13-24.28s75.16-39,116.92-43.05c59.73-5.85,113.28,22.88,168.9,38.84,30.2,8.66,59,6.17,87.09-7.5,22.43-10.89,48-26.93,60.65-49.24V0Z"
+					opacity=".5" class="shape-fill"></path>
+				<path
+					d="M0,0V5.63C149.93,59,314.09,71.32,475.83,42.57c43-7.64,84.23-20.12,127.61-26.46,59-8.63,112.48,12.24,165.56,35.4C827.93,77.22,886,95.24,951.2,90c86.53-7,172.46-45.71,248.8-84.81V0Z"
+					class="shape-fill"></path>
+			</svg>
+		</div>
+
+		<div class="container">
+			<div class="button-container d-flex justify-content-between align-items-center">
+				<h1 class="mr-auto">Collection</h1>
+				<div class="homepage-container home-link">
+					<a href="https://cristiangabriel.dev/QuickPaste/index.html" target="_blank"><img
+							src="./icons/logo-with-text.png" alt="Logo" class="logo-image img-fluid ml-auto"></a>
+					<a href="https://cristiangabriel.dev/QuickPaste/index.html" target="_blank">
+						<h6 class="about-link">About V 1.2</h6>
+					</a>
+				</div>
 			</div>
 
+			<input type="search" id="collectionSearch" class="search-input" placeholder="Search clips..." style="display:none;">
+			<!-- *DELETE BUTTONS* -->
+			<div class="button-container d-flex justify-content-start">
+				<button id="selectAll" class="button" style="display:none;">Select All</button>
+				<button id="copySelected" class="button" style="display:none;">Copy Selected</button>
+				<button id="deleteSelected" class="button" style="display:none;">Delete Selected</button>
+			</div>
+			<div class="container collection" id="collection-container"></div>
+			<button id="bttButton" type="button" aria-label="Back to top" title="Back to top">
+				<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+					stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+					<path d="M12 19V5" />
+					<path d="m6 11 6-6 6 6" />
+				</svg>
+			</button>
 		</div>
-
-		<table class="table table-hover">
-			<thead>
-				<tr>
-					<th class="tableHead" scope="col">Setting</th>
-					<th class="tableHead" scope="col">Preference</th>
-				</tr>
-			</thead>
-			<tbody>
-				<tr>
-					<th scope="row" id="notifications">Notifications</th>
-					<td>
-						<div class="container d-flex justify-content-start">
-							<div>
-								<input type="radio" id="notifOn" name="notifOption" value="On">
-								<label for="notifOn">On</label>
-							</div>
-
-							<div>
-								<input type="radio" id="notifOff" name="notifOption" value="Off">
-								<label for="notifOff">Off</label>
-							</div>
-						</div>
-					</td>
-				</tr>
-			</tbody>
-		</table>
-		<div id="status"></div>
-		<button id="save" class="button">Save Settings</button>
-
-		<!-- *END OF TABLE* -->
-		<h1>Collection</h1>
-		<!-- *DELETE BUTTONS* -->
-		<div class="button-container d-flex justify-content-start">
-			<button id="deleteSelected" class="button" style="display:none;">Delete Selected</button>
-			<button id="selectAll" class="button" style="display:none;">Select All</button>
-		</div>
-		<div class="container collection" id="collection-container"></div>
-		<button id="bttButton" class="button">Back to Top</button>
-	</div>
+	</main>
+	<script src="lib/storage.js"></script>
+	<script src="lib/format.js"></script>
+	<script src="lib/toast.js"></script>
 	<script src="options.js"></script>
 </body>
 
