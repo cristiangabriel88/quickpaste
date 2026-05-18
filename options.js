@@ -312,6 +312,29 @@ function renderCollection(clips) {
   selectAllButton.innerText = "Select All";
   document.getElementById("collectionSearch").style.display = hasClips ? "block" : "none";
 
+  if (!hasClips) {
+    let empty = document.createElement("div");
+    empty.className = "qp-empty";
+    let title = document.createElement("p");
+    title.className = "qp-empty__title";
+    title.innerText = "Your collection is empty";
+    let step1 = document.createElement("p");
+    step1.className = "qp-empty__hint";
+    step1.innerText = "1. Select text on any page";
+    let step2 = document.createElement("p");
+    step2.className = "qp-empty__hint";
+    step2.innerText = "2. Right-click and choose “Save text to QuickPaste”";
+    let step3 = document.createElement("p");
+    step3.className = "qp-empty__hint";
+    step3.innerText = "3. Saved clips will appear here and in the toolbar popup";
+    empty.appendChild(title);
+    empty.appendChild(step1);
+    empty.appendChild(step2);
+    empty.appendChild(step3);
+    collectionContainer.appendChild(empty);
+    return;
+  }
+
   let sortMode = (appliedSettings && appliedSettings.sortMode) || "manual";
   let ordered = QPStorage.sortForDisplay(clips, sortMode).filter(passesFilters);
 

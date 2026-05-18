@@ -170,3 +170,113 @@ The two most common ones for an extension with this shape are:
 2. **"Please clarify your data handling."** Link them to the privacy policy URL, and quote the *"What QuickPaste does not do"* section verbatim — reviewers want to see explicit "no analytics, no transfer, no sale" statements.
 
 Do not promise to remove `<all_urls>` to make the request go away — the extension genuinely needs it for the right-click menu to work everywhere. Justifying it correctly is the right move.
+
+---
+
+## 7. Product detail description (paste into the listing's Description field)
+
+The Chrome Web Store "Description" field allows up to 16,000 characters. The text below is ~5,400 characters — well under the cap, comprehensive enough to communicate every feature, and structured with plain-text section headers (the Store does not render Markdown). Paste it verbatim into the Description box on the Store listing tab.
+
+Before pasting:
+- Replace `[your privacy URL]` near the bottom with your actual published privacy policy URL.
+- Confirm the keyboard shortcut still matches `manifest.json` (currently `Alt+Shift+Q`). If you change the binding, update the description.
+
+> QuickPaste is a fast, lightweight clipboard organizer for Chrome. Save snippets of text and images from any website with a single right-click, then find, organize, and reuse them whenever you need. No account, no sign-up, no servers — everything stays on your device.
+>
+> WHAT IT DOES
+>
+> Right-click any selected text on any page and choose "Save text to QuickPaste" — that's it. The clip lands in your personal Collection along with the URL of the page it came from. Click the QuickPaste icon in your toolbar (or press Alt+Shift+Q) to see everything you've saved.
+>
+> Same flow for images: right-click an image, choose "Save image to QuickPaste", and it lands in your Collection as a visual clip.
+>
+> Need to jot something down by hand? Open the popup and use the quick-save form to type or paste a clip directly — useful for ideas, draft replies, or anything you didn't copy from a webpage.
+>
+> WHY USE IT
+>
+> - No sign-up, no login, no account. Install and start saving immediately.
+> - 100% local by default. Clips live in your browser's own storage. The developer never sees them.
+> - No analytics, no telemetry, no ads. Single-purpose extension: it saves clips, and that's it.
+> - Open and transparent. The privacy policy spells out exactly what is and isn't stored.
+> - Free.
+>
+> GREAT FOR
+>
+> - Researchers building a swipe file from articles, papers, and forum threads.
+> - Writers collecting quotes, references, and source URLs without losing the link.
+> - Students saving lecture notes, definitions, and study material as they browse.
+> - Designers and developers grabbing color codes, snippets, and inspiration.
+> - Anyone tired of pasting things into a scratch document and losing them.
+>
+> FEATURES
+>
+> Save and capture
+> - Right-click context menu for text and images on any site.
+> - Quick-save form in the popup for typing clips manually.
+> - Optional auto-capture: opt in to save every Ctrl+C / Cmd+C automatically, with a per-domain blocklist for privacy. Off by default.
+> - Toolbar shortcut: Alt+Shift+Q (rebindable at chrome://extensions/shortcuts).
+>
+> Organize
+> - Pin important clips to keep them at the top.
+> - Add tags to clips and filter by them later.
+> - Drag-and-drop to reorder clips in manual sort mode.
+> - Sort by manual order, newest, oldest, or A–Z.
+> - Edit clips in place — fix typos, change wording, merge paragraphs.
+>
+> Find anything fast
+> - Live search with fuzzy matching and typo-tolerance: "recevied" still finds "received".
+> - Match highlighting shows you exactly where your query landed.
+> - Filter by date range (today, last 7 days, last 30 days, custom range) and by tag.
+> - Save your favourite searches and apply them with one click later.
+>
+> Bulk actions
+> - Select multiple clips with checkboxes; Select All / Deselect All.
+> - Bulk delete with a 6-second Undo toast — your deletes are reversible.
+> - Bulk copy joins selected clips with your chosen format (plain, with source URL, with timestamp, or Markdown).
+>
+> Get clips out
+> - One-click copy a clip to your system clipboard.
+> - "Copy with source URL" appends the original page link automatically.
+> - Send to integrations: Obsidian (pre-fills a new note in your vault), Notion (copies and opens a new page), Google Docs (copies and opens a new doc).
+> - Export your whole Collection to JSON or Markdown for backup or migration.
+> - Import clips back from a JSON export.
+>
+> Stay in sync (optional)
+> - Turn on Chrome Sync to mirror your pinned clips plus the most recent N clips across the browsers you're signed into. Uses your own Google account; the developer has no access. Off by default.
+>
+> Looks and feel
+> - Light and Dark themes.
+> - Custom accent colour.
+> - Compact or Comfortable density.
+> - Adjustable preview length; toggle source URL and timestamp display.
+>
+> Housekeeping
+> - Optional auto-delete: clips older than 7, 30, or 90 days are pruned automatically. Pinned clips are never pruned. Off by default.
+> - Optional max clip count: cap your collection at 100, 500, or 1000 clips; oldest unpinned drop first. Off by default.
+> - Deduplication: strict, normalized (case + whitespace ignored), or off — your call.
+> - Optional confirm-before-delete safety prompt.
+>
+> PRIVACY
+>
+> QuickPaste does not collect personal information, browsing history, passwords, form data, or anything else you don't explicitly save. There are no servers. There are no analytics. There is no account system.
+>
+> The extension requests the host permission "Read and change your data on all websites" for one reason: so the right-click "Save text" and "Save image" menu items work on every site you choose to use them on, and so the opt-in auto-capture feature can listen for your own Ctrl+C actions if you turn it on. The extension does not read page content on its own.
+>
+> Full privacy policy: [your privacy URL]
+>
+> WHAT'S NEW IN 2.0
+>
+> - New design with light and dark themes, accent colour, and density options.
+> - Save images, not just text.
+> - Tags, pins, and drag-and-drop reorder.
+> - Live fuzzy search with highlighting; date and tag filters; saved searches.
+> - In-place clip editing.
+> - Bulk select, copy, delete — all with undo.
+> - Quick-save for clips you type manually.
+> - Optional auto-capture of copy actions with per-site blocklist.
+> - Optional sync of pinned + recent clips via Chrome Sync.
+> - Send to Obsidian, Notion, Google Docs.
+> - Export and import (JSON, Markdown).
+> - Optional auto-delete and max-clip-count retention rules.
+> - Notifications can include a clip preview.
+>
+> Get started in 10 seconds: install QuickPaste, select some text on any page, right-click, choose "Save text to QuickPaste". Done.

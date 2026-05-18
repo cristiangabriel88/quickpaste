@@ -309,6 +309,8 @@ hr {
 	font-size: 0.72rem;
 	color: var(--text-muted);
 	letter-spacing: 0.005em;
+	user-select: none;
+	-webkit-user-select: none;
 }
 
 .search-input {
@@ -422,6 +424,43 @@ hr {
 #paragraph-box {
 	height: 90vh;
 	width: 100vw;
+}
+
+.qp-empty {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	padding: 28px 22px;
+	margin: 16px 10px;
+	gap: 6px;
+	text-align: center;
+	border: 1px dashed var(--border);
+	border-radius: 12px;
+	background: var(--surface);
+	color: var(--text);
+}
+
+.qp-empty__title {
+	margin: 0 0 8px 0;
+	font-family: var(--font-display);
+	font-size: 1.05rem;
+	font-weight: 600;
+	color: var(--text);
+}
+
+.qp-empty__hint {
+	margin: 0;
+	font-family: var(--font-sans);
+	font-size: 0.85rem;
+	line-height: 1.5;
+	color: var(--text-muted);
+}
+
+.qp-empty__hint--muted {
+	margin-top: 8px;
+	font-size: 0.78rem;
+	opacity: 0.85;
 }
 
 label {

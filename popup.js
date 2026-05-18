@@ -149,6 +149,34 @@ function renderPopup(clips) {
   let ordered = QPStorage.sortForDisplay(clips, sortMode);
   searchInput.style.display = searchOpen ? "" : "none";
 
+  if (ordered.length === 0) {
+    let empty = document.createElement("div");
+    empty.className = "qp-empty";
+    let title = document.createElement("p");
+    title.className = "qp-empty__title";
+    title.innerText = "No clips yet";
+    let step1 = document.createElement("p");
+    step1.className = "qp-empty__hint";
+    step1.innerText = "1. Select text on any page";
+    let step2 = document.createElement("p");
+    step2.className = "qp-empty__hint";
+    step2.innerText = "2. Right-click and choose “Save text to QuickPaste”";
+    let step3 = document.createElement("p");
+    step3.className = "qp-empty__hint";
+    step3.innerText = "3. Open this popup to see your saved clips";
+    let or = document.createElement("p");
+    or.className = "qp-empty__hint qp-empty__hint--muted";
+    or.innerText = "Or tap the + button above to type a clip directly.";
+    empty.appendChild(title);
+    empty.appendChild(step1);
+    empty.appendChild(step2);
+    empty.appendChild(step3);
+    empty.appendChild(or);
+    paragraphBox.appendChild(empty);
+    applySearchFilter();
+    return;
+  }
+
   for (let clip of ordered) {
     let newContainer = document.createElement("div");
     newContainer.dataset.clipId = clip.id;
