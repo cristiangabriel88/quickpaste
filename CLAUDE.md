@@ -52,4 +52,4 @@ Three entry points + one shared library, all sharing state through `chrome.stora
 
 ## Source of truth for project context
 
-`readme.md` is the CS50 submission write-up — it documents the author's design decisions (especially the paragraph-splitting workaround) and is the closest thing to design docs this repo has.
+`readme.md` is the public-facing project doc — install instructions, feature list, architecture table, permission rationale, and the CS50 origin story (including the paragraph-splitting workaround that's still in production). Good first read for any new contributor. For Web Store paperwork (policy, justifications, listing description) see `STORE_SUBMISSION.md`. For the manual QA matrix and open static-analysis findings see `TESTING.md`.
