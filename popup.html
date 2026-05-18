@@ -50,6 +50,29 @@
 				</svg>
 			</a>
 		</nav>
+		<nav class="filter-tabs" role="tablist" aria-label="Filter clips">
+			<button type="button" class="filter-tab is-active" data-filter="all" role="tab" aria-selected="true">All</button>
+			<button type="button" class="filter-tab" data-filter="pinned" role="tab" aria-selected="false" title="Pinned" aria-label="Pinned">
+				<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16" fill="none"
+					stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+					<polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+				</svg>
+			</button>
+			<button type="button" class="filter-tab" data-filter="tagged" role="tab" aria-selected="false" title="Labeled" aria-label="Labeled">
+				<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16" fill="none"
+					stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+					<path d="M20.59 13.41 13.42 20.58a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path>
+					<line x1="7" y1="7" x2="7.01" y2="7"></line>
+				</svg>
+			</button>
+			<button type="button" class="filter-tab" data-filter="linked" role="tab" aria-selected="false" title="With source URL" aria-label="With source URL">
+				<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16" fill="none"
+					stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+					<path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
+					<path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
+				</svg>
+			</button>
+		</nav>
 		<div id="quickSaveArea" class="quicksave" hidden>
 			<textarea id="quickSaveText" class="quicksave__text" rows="3" placeholder="Paste or type a clip, then Save..."></textarea>
 			<div class="quicksave__actions">

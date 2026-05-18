@@ -96,6 +96,19 @@
 							</label>
 						</div>
 					</div>
+					<div class="setting-row">
+						<span class="setting-row__label">Popup clip buttons</span>
+						<div class="setting-row__controls">
+							<label class="setting-option">
+								<input type="radio" name="setting-clipActionsMode" value="inline" data-setting="clipActionsMode" data-setting-control="radio">
+								<span>Always visible</span>
+							</label>
+							<label class="setting-option">
+								<input type="radio" name="setting-clipActionsMode" value="menu" data-setting="clipActionsMode" data-setting-control="radio">
+								<span>Tucked under three-dot menu</span>
+							</label>
+						</div>
+					</div>
 				</div>
 			</details>
 
@@ -403,6 +416,21 @@
 					<input type="date" id="dateRangeEnd" class="filter-bar__control">
 					<button id="dateRangeReset" type="button" class="button button--ghost filter-bar__reset" title="Clear custom date range">Reset</button>
 				</div>
+				<label class="filter-bar__field">
+					<span class="filter-bar__label">Sort</span>
+					<select id="filterBarSortMode" class="filter-bar__control" title="Default sort order — mirrors Settings → Clip display">
+						<option value="manual">Manual</option>
+						<option value="newest">Newest first</option>
+						<option value="oldest">Oldest first</option>
+						<option value="az">Alphabetical</option>
+					</select>
+				</label>
+				<label class="filter-bar__field">
+					<span class="filter-bar__label">Label</span>
+					<select id="filterBarTag" class="filter-bar__control" title="Filter by label (top 30 most-used)">
+						<option value="">All labels</option>
+					</select>
+				</label>
 				<!-- *DELETE BUTTONS* -->
 				<div class="filter-bar__actions">
 					<button id="selectAll" class="button" style="display:none;">Select All</button>
@@ -437,6 +465,7 @@
 	<script src="lib/toast.js"></script>
 	<script src="lib/tooltip.js"></script>
 	<script src="lib/confirm.js"></script>
+	<script src="lib/labelEditor.js"></script>
 	<script src="lib/search.js"></script>
 	<script src="lib/savedSearches.js"></script>
 	<script src="lib/exporter.js"></script>

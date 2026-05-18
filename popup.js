@@ -1,6 +1,7 @@
 let appliedSettings = null;
 let currentQuery = "";
 let searchOpen = false;
+let currentFilter = "all"; // "all" | "pinned" | "tagged" | "linked"
 
 function applyVisualSettings(settings) {
   let theme = settings.theme === "dark" ? "dark" : "light";
@@ -8,11 +9,19 @@ function applyVisualSettings(settings) {
   document.body.dataset.density = settings.density === "compact" ? "compact" : "comfortable";
   document.body.dataset.showUrl = settings.showUrl ? "true" : "false";
   document.body.dataset.showTimestamp = settings.showTimestamp ? "true" : "false";
+  document.body.dataset.clipActions = settings.clipActionsMode === "menu" ? "menu" : "inline";
   if (settings.accentColor) {
     document.documentElement.style.setProperty("--accent", settings.accentColor);
   } else {
     document.documentElement.style.removeProperty("--accent");
   }
+}
+
+function clipPassesFilter(clip) {
+  if (currentFilter === "pinned") return !!clip.pinned;
+  if (currentFilter === "tagged") return Array.isArray(clip.tags) && clip.tags.length > 0;
+  if (currentFilter === "linked") return typeof clip.url === "string" && clip.url.indexOf("http") === 0;
+  return true;
 }
 
 const PIN_SVG_FILLED =
@@ -64,6 +73,21 @@ const SEND_SVG =
   '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' +
   '<line x1="22" y1="2" x2="11" y2="13"></line>' +
   '<polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>' +
+  '</svg>';
+
+const KEBAB_SVG =
+  '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16" fill="currentColor" stroke="none">' +
+  '<circle cx="12" cy="5" r="1.6"></circle>' +
+  '<circle cx="12" cy="12" r="1.6"></circle>' +
+  '<circle cx="12" cy="19" r="1.6"></circle>' +
+  '</svg>';
+
+const LABEL_PLUS_SVG =
+  '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' +
+  '<path d="M20.59 13.41 13.42 20.58a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path>' +
+  '<line x1="7" y1="7" x2="7.01" y2="7"></line>' +
+  '<line x1="17" y1="2" x2="17" y2="6"></line>' +
+  '<line x1="15" y1="4" x2="19" y2="4"></line>' +
   '</svg>';
 
 function enterPopupEditMode(clip, container) {
@@ -146,32 +170,60 @@ function renderPopup(clips) {
   let previewLength = Number(appliedSettings && appliedSettings.previewLength) || 500;
   let confirmDelete = !!(appliedSettings && appliedSettings.confirmDelete);
 
-  let ordered = QPStorage.sortForDisplay(clips, sortMode);
+  let ordered = QPStorage.sortForDisplay(clips, sortMode).filter(clipPassesFilter);
   searchInput.style.display = searchOpen ? "" : "none";
+
+  // Build the union of labels across ALL clips (not just filtered) so the
+  // Add-Label picker offers the same vocabulary regardless of the active tab.
+  let allLabels = [];
+  let seenLabel = new Set();
+  for (let c of clips) {
+    if (!Array.isArray(c.tags)) continue;
+    for (let t of c.tags) {
+      if (typeof t !== "string" || !t || seenLabel.has(t)) continue;
+      seenLabel.add(t);
+      allLabels.push(t);
+    }
+  }
+  allLabels.sort(function (a, b) { return a.localeCompare(b); });
 
   if (ordered.length === 0) {
     let empty = document.createElement("div");
     empty.className = "qp-empty";
-    let title = document.createElement("p");
-    title.className = "qp-empty__title";
-    title.innerText = "No clips yet";
-    let step1 = document.createElement("p");
-    step1.className = "qp-empty__hint";
-    step1.innerText = "1. Select text on any page";
-    let step2 = document.createElement("p");
-    step2.className = "qp-empty__hint";
-    step2.innerText = "2. Right-click and choose “Save text to QuickPaste”";
-    let step3 = document.createElement("p");
-    step3.className = "qp-empty__hint";
-    step3.innerText = "3. Open this popup to see your saved clips";
-    let or = document.createElement("p");
-    or.className = "qp-empty__hint qp-empty__hint--muted";
-    or.innerText = "Or tap the + button above to type a clip directly.";
-    empty.appendChild(title);
-    empty.appendChild(step1);
-    empty.appendChild(step2);
-    empty.appendChild(step3);
-    empty.appendChild(or);
+    if (currentFilter !== "all" && clips.length > 0) {
+      empty.classList.add("qp-empty--filtered");
+      let title = document.createElement("p");
+      title.className = "qp-empty__title";
+      let label = currentFilter === "pinned" ? "pinned" :
+                  currentFilter === "tagged" ? "labeled" : "linked";
+      title.innerText = "No " + label + " clips";
+      let hint = document.createElement("p");
+      hint.className = "qp-empty__hint qp-empty__hint--muted";
+      hint.innerText = "Switch to All to see everything.";
+      empty.appendChild(title);
+      empty.appendChild(hint);
+    } else {
+      let title = document.createElement("p");
+      title.className = "qp-empty__title";
+      title.innerText = "No clips yet";
+      let step1 = document.createElement("p");
+      step1.className = "qp-empty__hint";
+      step1.innerText = "1. Select text on any page";
+      let step2 = document.createElement("p");
+      step2.className = "qp-empty__hint";
+      step2.innerText = "2. Right-click and choose “Save text to QuickPaste”";
+      let step3 = document.createElement("p");
+      step3.className = "qp-empty__hint";
+      step3.innerText = "3. Open this popup to see your saved clips";
+      let or = document.createElement("p");
+      or.className = "qp-empty__hint qp-empty__hint--muted";
+      or.innerText = "Or tap the + button above to type a clip directly.";
+      empty.appendChild(title);
+      empty.appendChild(step1);
+      empty.appendChild(step2);
+      empty.appendChild(step3);
+      empty.appendChild(or);
+    }
     paragraphBox.appendChild(empty);
     applySearchFilter();
     return;
@@ -194,6 +246,15 @@ function renderPopup(clips) {
     timestamp.className = "clip-meta__time";
     timestamp.innerText = QPFormat.formatRelative(clip.savedAt);
     meta.appendChild(timestamp);
+
+    let kebab = document.createElement("button");
+    kebab.type = "button";
+    kebab.className = "icon-button icon-button--mini clip-kebab";
+    kebab.title = "Actions";
+    kebab.setAttribute("aria-label", "Actions");
+    kebab.setAttribute("aria-expanded", "false");
+    kebab.innerHTML = KEBAB_SVG;
+    meta.appendChild(kebab);
 
     newContainer.appendChild(meta);
 
@@ -261,6 +322,21 @@ function renderPopup(clips) {
     let actionRow = document.createElement("div");
     actionRow.className = "clip-actions";
     newContainer.appendChild(actionRow);
+
+    kebab.addEventListener("click", function (e) {
+      e.stopPropagation();
+      let willOpen = !actionRow.classList.contains("is-open");
+      // Close any other open action rows so only one is expanded at a time.
+      document.querySelectorAll("#paragraph-box .clip-actions.is-open").forEach(function (row) {
+        if (row !== actionRow) {
+          row.classList.remove("is-open");
+          let otherKebab = row.parentElement && row.parentElement.querySelector(".clip-kebab");
+          if (otherKebab) otherKebab.setAttribute("aria-expanded", "false");
+        }
+      });
+      actionRow.classList.toggle("is-open", willOpen);
+      kebab.setAttribute("aria-expanded", willOpen ? "true" : "false");
+    });
 
     //?############# PIN ###########################
     let pinButton = document.createElement("button");
@@ -378,6 +454,99 @@ function renderPopup(clips) {
     });
     sendTo.appendChild(sendMenu);
     actionRow.appendChild(sendTo);
+
+    //?############# ADD LABEL ###########################
+    let labelPicker = document.createElement("details");
+    labelPicker.className = "add-label";
+    let labelSummary = document.createElement("summary");
+    labelSummary.className = "icon-button add-label__summary";
+    labelSummary.title = "Add label";
+    labelSummary.setAttribute("aria-label", "Add label");
+    labelSummary.innerHTML = LABEL_PLUS_SVG;
+    labelPicker.appendChild(labelSummary);
+    let labelMenu = document.createElement("div");
+    labelMenu.className = "add-label__menu";
+    function renderLabelMenu() {
+      labelMenu.innerHTML = "";
+      let heading = document.createElement("div");
+      heading.className = "add-label__heading";
+      heading.innerText = "Labels";
+      labelMenu.appendChild(heading);
+
+      let applied = Array.isArray(clip.tags) ? clip.tags.slice() : [];
+      let labelSet = new Set(allLabels);
+      applied.forEach(function (t) { labelSet.add(t); });
+      let ordered = Array.from(labelSet).sort(function (a, b) { return a.localeCompare(b); });
+
+      if (ordered.length === 0) {
+        let none = document.createElement("div");
+        none.className = "add-label__empty";
+        none.innerText = "No labels yet — create one below.";
+        labelMenu.appendChild(none);
+      } else {
+        ordered.forEach(function (tag) {
+          let opt = document.createElement("button");
+          opt.type = "button";
+          opt.className = "add-label__option" + (applied.indexOf(tag) !== -1 ? " add-label__option--applied" : "");
+          let span = document.createElement("span");
+          span.innerText = tag;
+          opt.appendChild(span);
+          opt.addEventListener("click", function (e) {
+            e.stopPropagation();
+            let cur = Array.isArray(clip.tags) ? clip.tags.slice() : [];
+            let idx = cur.indexOf(tag);
+            if (idx === -1) cur.push(tag);
+            else cur.splice(idx, 1);
+            QPStorage.updateClip(clip.id, { tags: cur }).then(function () {
+              QPStorage.getClips().then(renderPopup);
+            });
+          });
+          labelMenu.appendChild(opt);
+        });
+      }
+
+      let creator = document.createElement("div");
+      creator.className = "add-label__new";
+      let input = document.createElement("input");
+      input.type = "text";
+      input.className = "add-label__input";
+      input.placeholder = "New label";
+      input.maxLength = 40;
+      let commit = document.createElement("button");
+      commit.type = "button";
+      commit.className = "add-label__commit";
+      commit.innerText = "Add";
+      function commitNewLabel() {
+        let val = (input.value || "").trim();
+        if (!val) return;
+        let cur = Array.isArray(clip.tags) ? clip.tags.slice() : [];
+        if (cur.indexOf(val) === -1) cur.push(val);
+        QPStorage.updateClip(clip.id, { tags: cur }).then(function () {
+          QPStorage.getClips().then(renderPopup);
+        });
+      }
+      commit.addEventListener("click", function (e) {
+        e.stopPropagation();
+        commitNewLabel();
+      });
+      input.addEventListener("keydown", function (e) {
+        if (e.key === "Enter") { e.preventDefault(); commitNewLabel(); }
+        else if (e.key === "Escape") { e.preventDefault(); labelPicker.removeAttribute("open"); }
+      });
+      input.addEventListener("click", function (e) { e.stopPropagation(); });
+      creator.appendChild(input);
+      creator.appendChild(commit);
+      labelMenu.appendChild(creator);
+    }
+    renderLabelMenu();
+    labelPicker.appendChild(labelMenu);
+    labelPicker.addEventListener("toggle", function () {
+      if (labelPicker.open) {
+        let input = labelMenu.querySelector(".add-label__input");
+        if (input) setTimeout(function () { input.focus(); }, 20);
+      }
+    });
+    actionRow.appendChild(labelPicker);
 
     //?############# DELETE ###########################
     let deleteButton = document.createElement("button");
@@ -570,6 +739,25 @@ function maybeShowTagBanner(settings) {
   text.addEventListener("keydown", function (e) {
     if (e.key === "Escape") { e.preventDefault(); close(); }
     if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) { e.preventDefault(); commit.click(); }
+  });
+})();
+
+//* ============ FILTER TABS ============
+(function () {
+  let tabs = document.querySelectorAll(".filter-tabs .filter-tab");
+  if (!tabs.length) return;
+  tabs.forEach(function (tab) {
+    tab.addEventListener("click", function () {
+      let next = tab.dataset.filter || "all";
+      if (next === currentFilter) return;
+      currentFilter = next;
+      tabs.forEach(function (t) {
+        let active = t === tab;
+        t.classList.toggle("is-active", active);
+        t.setAttribute("aria-selected", active ? "true" : "false");
+      });
+      QPStorage.getClips().then(renderPopup);
+    });
   });
 })();
 

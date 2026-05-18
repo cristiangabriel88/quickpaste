@@ -172,10 +172,18 @@ function applyCollectionHighlights() {
   });
 }
 
+function syncFilterBarSortSelector(settings) {
+  let sel = document.getElementById("filterBarSortMode");
+  if (!sel) return;
+  let mode = (settings && settings.sortMode) || "manual";
+  if (sel.value !== mode) sel.value = mode;
+}
+
 QPSettings.get().then(function (settings) {
   appliedSettings = settings;
   applyVisualSettings(settings);
   hydrateSettingsPanel(settings);
+  syncFilterBarSortSelector(settings);
   bindSettingsPanel();
 });
 
@@ -183,6 +191,7 @@ QPSettings.onChanged(function (settings) {
   appliedSettings = settings;
   applyVisualSettings(settings);
   hydrateSettingsPanel(settings);
+  syncFilterBarSortSelector(settings);
   // Re-render so sort/density/visibility/tag changes take effect immediately.
   QPStorage.getClips().then(renderCollection);
 });
@@ -287,6 +296,12 @@ const SVG_DELETE =
   '<path d="M9 6V4a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2"></path>' +
   '</svg>';
 
+const SVG_TAG =
+  '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' +
+  '<path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path>' +
+  '<line x1="7" y1="7" x2="7.01" y2="7"></line>' +
+  '</svg>';
+
 function flashButton(btn, label) {
   let original = btn.title;
   let originalAria = btn.getAttribute("aria-label");
@@ -343,7 +358,6 @@ function renderCollection(clips) {
       (result.selectedCheckboxes || []).filter(function (v) { return typeof v === "string"; })
     );
 
-    let dragMode = sortMode === "manual";
     for (let clip of ordered) {
       let newContainer = document.createElement("div");
       newContainer.dataset.clipId = clip.id;
@@ -352,7 +366,7 @@ function renderCollection(clips) {
       let clipBodyText = clip.kind === "image" ? (clip.src || "") : (clip.text || []).join(" ");
       let clipTagsText = Array.isArray(clip.tags) ? clip.tags.join(" ") : "";
       newContainer.dataset.searchHaystack = (clipBodyText + " " + clipTagsText).toLowerCase();
-      if (dragMode && !clip.pinned) {
+      if (!clip.pinned) {
         newContainer.draggable = true;
         newContainer.classList.add("is-draggable");
       }
@@ -418,6 +432,26 @@ function renderCollection(clips) {
         });
       });
       headerRow.appendChild(pinButton);
+
+      // Labels (add / edit)
+      let labelsButton = document.createElement("button");
+      labelsButton.className = "icon-button";
+      let labelCount = Array.isArray(clip.tags) ? clip.tags.length : 0;
+      labelsButton.title = labelCount > 0 ? "Edit labels (" + labelCount + ")" : "Add label";
+      labelsButton.setAttribute("aria-label", labelsButton.title);
+      labelsButton.innerHTML = SVG_TAG;
+      if (labelCount > 0) labelsButton.classList.add("icon-button--has-labels");
+      labelsButton.addEventListener("click", function () {
+        QPStorage.getClips().then(function (all) {
+          let pool = collectAllTags(all);
+          QPLabelEditor.show(clip.tags || [], pool, function (nextTags) {
+            QPStorage.updateClip(clip.id, { tags: nextTags }).then(function () {
+              QPStorage.getClips().then(renderCollection);
+            });
+          });
+        });
+      });
+      headerRow.appendChild(labelsButton);
 
       // Edit
       let editButton = document.createElement("button");
@@ -588,6 +622,74 @@ function renderCollection(clips) {
     applyCollectionSearchFilter();
     maybeScrollToHashClip();
   });
+
+  refreshTagFilterOptions(clips);
+}
+
+// Returns every unique tag in the clip list, ranked by usage count desc then
+// alphabetical. Used to populate the label editor's "Pick from existing" pool.
+function collectAllTags(clips) {
+  let counts = new Map();
+  for (let c of clips) {
+    if (!c || !Array.isArray(c.tags)) continue;
+    for (let t of c.tags) {
+      if (typeof t !== "string" || !t) continue;
+      counts.set(t, (counts.get(t) || 0) + 1);
+    }
+  }
+  return Array.from(counts.entries())
+    .sort(function (a, b) {
+      if (b[1] !== a[1]) return b[1] - a[1];
+      return a[0].localeCompare(b[0]);
+    })
+    .map(function (e) { return e[0]; });
+}
+
+// Rebuilds the Label filter <select>. Shows up to 30 tags, ranked by usage
+// count desc then alphabetical, and always includes the currently-active
+// filter tag (even if it falls outside the top 30) so the selection stays valid.
+const TAG_FILTER_MAX = 30;
+function refreshTagFilterOptions(clips) {
+  let sel = document.getElementById("filterBarTag");
+  if (!sel) return;
+
+  let counts = new Map();
+  for (let c of clips) {
+    if (!c || !Array.isArray(c.tags)) continue;
+    for (let t of c.tags) {
+      if (typeof t !== "string" || !t) continue;
+      counts.set(t, (counts.get(t) || 0) + 1);
+    }
+  }
+
+  let entries = Array.from(counts.entries());
+  entries.sort(function (a, b) {
+    if (b[1] !== a[1]) return b[1] - a[1];
+    return a[0].localeCompare(b[0]);
+  });
+
+  let top = entries.slice(0, TAG_FILTER_MAX).map(function (e) { return e[0]; });
+  if (currentTagFilter && top.indexOf(currentTagFilter) === -1 && counts.has(currentTagFilter)) {
+    top.push(currentTagFilter);
+  }
+  // If the active filter no longer matches any clip, drop it.
+  if (currentTagFilter && !counts.has(currentTagFilter)) {
+    currentTagFilter = "";
+  }
+
+  sel.innerHTML = "";
+  let allOpt = document.createElement("option");
+  allOpt.value = "";
+  allOpt.innerText = "All labels";
+  sel.appendChild(allOpt);
+  top.forEach(function (tag) {
+    let opt = document.createElement("option");
+    opt.value = tag;
+    let count = counts.get(tag) || 0;
+    opt.innerText = tag + " (" + count + ")";
+    sel.appendChild(opt);
+  });
+  sel.value = currentTagFilter;
 }
 
 function enterEditMode(clip, container) {
@@ -708,6 +810,25 @@ QPStorage.getClips().then(function (clips) {
     });
   }
 
+  // Filter-bar sort selector — mirrors Settings → Clip display → Default sort.
+  // Writes through QPSettings so the Settings panel and storage stay in sync;
+  // re-render is driven by the onChanged listener above.
+  let filterBarSort = document.getElementById("filterBarSortMode");
+  if (filterBarSort) {
+    filterBarSort.addEventListener("change", function () {
+      QPSettings.set({ sortMode: filterBarSort.value });
+    });
+  }
+
+  // Filter-bar label/tag selector.
+  let filterBarTag = document.getElementById("filterBarTag");
+  if (filterBarTag) {
+    filterBarTag.addEventListener("change", function () {
+      currentTagFilter = filterBarTag.value;
+      QPStorage.getClips().then(renderCollection);
+    });
+  }
+
   // ***********SAVED SEARCHES********
   function refreshSavedSearches() {
     let panel = document.getElementById("savedSearchesList");
@@ -816,13 +937,21 @@ QPStorage.getClips().then(function (clips) {
     });
   }
 
-  // ***********DRAG-AND-DROP REORDER (manual sort only)********
+  // ***********DRAG-AND-DROP REORDER********
+  // Drag is enabled on every unpinned card. If the user is on a non-manual
+  // sort, dropping switches them to Manual so the new order persists across
+  // re-renders (otherwise the active sort would immediately undo the drop).
   (function setupDragDrop() {
     let container = document.getElementById("collection-container");
     if (!container) return;
     let draggingId = null;
     let lastMarked = null;
     let lastSide = "";
+    // Track the actual mousedown element. Browsers vary on what dragstart's
+    // e.target is (some report the source draggable node, some report the
+    // descendant under the cursor), so we use the recorded mousedown target
+    // to decide whether the drag began on the header.
+    let lastMouseDownTarget = null;
 
     function clearMark() {
       if (lastMarked) {
@@ -832,8 +961,21 @@ QPStorage.getClips().then(function (clips) {
       }
     }
 
+    container.addEventListener("mousedown", function (e) {
+      lastMouseDownTarget = e.target;
+    });
+
     container.addEventListener("dragstart", function (e) {
-      let card = e.target.closest && e.target.closest(".paragraph-container");
+      let origin = lastMouseDownTarget || e.target;
+      // Only the header is a drag handle. The text body must stay
+      // text-selectable, and buttons/inputs/links keep their own behavior.
+      let header = origin && origin.closest && origin.closest(".paragraph-header");
+      let onInteractive = origin && origin.closest && origin.closest("button, input, label, summary, a");
+      if (!header || onInteractive) {
+        e.preventDefault();
+        return;
+      }
+      let card = header.closest(".paragraph-container");
       if (!card || !card.draggable) {
         e.preventDefault();
         return;
@@ -904,7 +1046,11 @@ QPStorage.getClips().then(function (clips) {
       // restore window.scrollY once the rebuild has painted.
       let savedScrollY = window.scrollY;
       container.style.minHeight = container.offsetHeight + "px";
-      QPStorage.reorderClips(order).then(function () {
+      let currentSort = (appliedSettings && appliedSettings.sortMode) || "manual";
+      let needSortSwitch = currentSort !== "manual";
+      let reorderTask = QPStorage.reorderClips(order);
+      let sortTask = needSortSwitch ? QPSettings.set({ sortMode: "manual" }) : Promise.resolve();
+      Promise.all([reorderTask, sortTask]).then(function () {
         QPStorage.getClips().then(function (clips) {
           renderCollection(clips);
           requestAnimationFrame(function () {
@@ -913,6 +1059,7 @@ QPStorage.getClips().then(function (clips) {
               container.style.minHeight = "";
             });
           });
+          if (needSortSwitch) QPToast.show("Switched to Manual sort to keep your order");
         });
       });
     });

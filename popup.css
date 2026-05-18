@@ -895,6 +895,244 @@ body[data-show-timestamp="false"] .clip-meta__time {
 	border-color: var(--border);
 }
 
+/* ************ FILTER TABS (popup) ************** */
+.filter-tabs {
+	display: grid;
+	grid-template-columns: repeat(4, 1fr);
+	gap: 0;
+	margin: 0 0 0.55rem 0;
+	border-bottom: 1px solid var(--border);
+}
+.filter-tab {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	gap: 4px;
+	background: transparent;
+	border: none;
+	border-bottom: 2px solid transparent;
+	color: var(--text-muted);
+	padding: 6px 0 7px 0;
+	margin-bottom: -1px;
+	font-family: var(--font-button);
+	font-size: 0.78rem;
+	font-weight: 500;
+	cursor: pointer;
+	transition: color 0.15s ease, border-color 0.15s ease, background-color 0.15s ease;
+}
+.filter-tab svg { display: block; }
+.filter-tab:hover {
+	color: var(--text);
+	background: rgba(108, 201, 94, 0.06);
+}
+.filter-tab.is-active {
+	color: var(--accent);
+	border-bottom-color: var(--accent);
+}
+.filter-tab:focus-visible {
+	outline: 2px solid var(--accent);
+	outline-offset: -2px;
+	border-radius: 4px;
+}
+
+.qp-empty--filtered .qp-empty__title {
+	font-size: 0.95rem;
+}
+
+/* ************ KEBAB / MENU MODE (popup) ************** */
+.clip-kebab {
+	display: none;
+	margin-left: auto;
+}
+body[data-clip-actions="menu"] .clip-kebab {
+	display: inline-flex;
+}
+/* Ghost kebab: no border/background until hovered or open, so it reads as
+   part of the clip meta rather than a floating toolbar button. */
+body[data-clip-actions="menu"] .clip-kebab.icon-button {
+	width: 28px;
+	height: 28px;
+	padding: 4px;
+	border-color: transparent;
+	background: transparent;
+	box-shadow: none;
+	color: var(--text-muted);
+	opacity: 0.55;
+	transition: opacity 0.15s ease, color 0.15s ease,
+		background-color 0.15s ease;
+}
+.paragraph-container:hover .clip-kebab.icon-button {
+	opacity: 1;
+}
+body[data-clip-actions="menu"] .clip-kebab.icon-button:hover {
+	opacity: 1;
+	background: var(--surface);
+	border-color: transparent;
+	color: var(--text);
+	transform: none;
+	box-shadow: none;
+}
+body[data-clip-actions="menu"] .clip-kebab[aria-expanded="true"].icon-button {
+	opacity: 1;
+	color: var(--accent);
+	background: rgba(108, 201, 94, 0.12);
+	border-color: transparent;
+}
+
+body[data-clip-actions="menu"] .clip-actions {
+	display: none;
+}
+/* Opened actions: flow underneath the clip instead of sitting in a card.
+   No background or border — just a hint of spacing and a soft reveal. */
+body[data-clip-actions="menu"] .clip-actions.is-open {
+	display: flex;
+	padding: 0.2rem 0 0 0;
+	background: transparent;
+	border: none;
+	border-radius: 0;
+	margin-top: 0.25rem;
+	animation: clipActionsReveal 0.18s ease-out;
+}
+@keyframes clipActionsReveal {
+	from { opacity: 0; transform: translateY(-4px); }
+	to   { opacity: 1; transform: translateY(0); }
+}
+/* Ghost the inner action buttons so the row feels like an extension of the
+   clip rather than a row of separate chips. */
+body[data-clip-actions="menu"] .clip-actions.is-open .icon-button {
+	border-color: transparent;
+	background: transparent;
+	box-shadow: none;
+}
+body[data-clip-actions="menu"] .clip-actions.is-open .icon-button:hover {
+	background: var(--surface);
+	border-color: transparent;
+	transform: none;
+	box-shadow: none;
+}
+[data-theme="dark"] body[data-clip-actions="menu"] .clip-kebab.icon-button:hover,
+[data-theme="dark"] body[data-clip-actions="menu"] .clip-actions.is-open .icon-button:hover {
+	background: var(--surface-strong);
+}
+
+/* ************ ADD LABEL PICKER (popup) ************** */
+.add-label {
+	position: relative;
+	display: inline-block;
+}
+.add-label__summary {
+	list-style: none;
+	cursor: pointer;
+}
+.add-label__summary::-webkit-details-marker { display: none; }
+.add-label__menu {
+	position: absolute;
+	top: calc(100% + 4px);
+	right: 0;
+	z-index: 1500;
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+	min-width: 180px;
+	max-width: 240px;
+	padding: 6px;
+	background: var(--bg);
+	border: 1px solid var(--border);
+	border-radius: 8px;
+	box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+}
+.paragraph-container:has(.add-label[open]) {
+	z-index: 60;
+}
+.add-label__heading {
+	font-family: var(--font-sans);
+	font-size: 0.68rem;
+	font-weight: 600;
+	letter-spacing: 0.04em;
+	text-transform: uppercase;
+	color: var(--text-muted);
+	padding: 2px 4px 0 4px;
+}
+.add-label__option {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 6px;
+	background: transparent;
+	border: none;
+	color: var(--text);
+	text-align: left;
+	padding: 5px 8px;
+	border-radius: 6px;
+	font-family: var(--font-sans);
+	font-size: 0.8rem;
+	cursor: pointer;
+}
+.add-label__option:hover {
+	background: var(--surface);
+}
+.add-label__option--applied {
+	color: var(--accent);
+}
+.add-label__option--applied::after {
+	content: "✓";
+	font-weight: 600;
+}
+.add-label__empty {
+	font-family: var(--font-sans);
+	font-size: 0.74rem;
+	color: var(--text-muted);
+	padding: 2px 8px;
+}
+.add-label__new {
+	display: flex;
+	gap: 4px;
+	padding: 4px 4px 2px 4px;
+	border-top: 1px solid var(--border);
+}
+.add-label__input {
+	flex: 1 1 auto;
+	min-width: 0;
+	padding: 4px 7px;
+	font-family: var(--font-sans);
+	font-size: 0.78rem;
+	border: 1px solid var(--border);
+	border-radius: 6px;
+	background: var(--bg);
+	color: var(--text);
+}
+.add-label__input:focus {
+	outline: none;
+	border-color: var(--accent);
+}
+.add-label__commit {
+	font-family: var(--font-button);
+	font-size: 0.72rem;
+	font-weight: 500;
+	padding: 3px 9px;
+	border-radius: 6px;
+	border: 1px solid var(--accent);
+	background: var(--accent);
+	color: #fff;
+	cursor: pointer;
+}
+.add-label__commit:hover { filter: brightness(1.05); }
+
+.clip-tag {
+	cursor: default;
+}
+.clip-tag--removable {
+	cursor: pointer;
+}
+.clip-tag--removable:hover {
+	background: rgba(108, 201, 94, 0.24);
+}
+.clip-tag--removable::after {
+	content: " ×";
+	margin-left: 2px;
+	opacity: 0.6;
+}
+
 /* ************ ACTION ROW (popup) ************** */
 .clip-actions {
 	display: flex;
