@@ -4,52 +4,104 @@
 <head>
 	<meta charset="utf-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1">
-	<link rel="stylesheet" type="text/css" href="popup.css">
 	<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet"
 		integrity="sha384-GLhlTQ8iRABdZLl6O3oVMWSktQOp6b7In1Zl3/Jr59b6EGGoI1aFkw7cmDA6j6gD" crossorigin="anonymous">
-	<link rel="preconnect" href="https://fonts.googleapis.com">
-	<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+	<link rel="stylesheet" type="text/css" href="popup.css">
 	<link rel="preconnect" href="https://fonts.googleapis.com">
 	<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 	<link
-		href="https://fonts.googleapis.com/css2?family=Fira+Sans:wght@400;500;600;700;800&family=Montserrat:ital,wght@0,100;0,200;0,300;0,400;0,500;0,800;1,100;1,200;1,900&family=Open+Sans:wght@300;500;600&display=swap"
+		href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Inter:wght@300;400;500;600;700&family=Sora:wght@300;400;500;600&display=swap"
 		rel="stylesheet">
 	<title>QuickPaste</title>
 </head>
 
 <body>
 	<div class="container-fluid">
-		<ul class="nav nav-fill">
-			<div class="container text-center">
-				<div class="row">
-					<div class="col">
-						<li class="nav-item">
-							<a class="nav-link active" aria-current="page"
-								href="https://cristiangabriel.dev/QuickPaste/index.html" target="_blank"><img
-									src="./icons/logo-no-text.png" alt="Logo" class="logo-image"
-									title="Visit Homepage"></a>
-						</li>
-					</div>
-					<div class="col-6">
-						<li class="nav-item">
-							<a class="nav-link" href="./options.html#collection-container" target="_blank">
-								<h1 class="header collection-link">QuickPaste Collection</h1>
-							</a>
-						</li>
-					</div>
-					<div class="col">
-						<li class="nav-item">
-							<a class="nav-link d-flex align-items-center" href="./options.html" target="_blank">
-								<h2 class="options-link">Options</h2>
-							</a>
-						</li>
-					</div>
-				</div>
+		<nav class="top-bar">
+			<a class="top-bar__logo" href="https://cristiangabriel.dev/QuickPaste/index.html" target="_blank"
+				title="Visit Homepage">
+				<img src="./icons/logo-no-text.png" alt="Logo" class="logo-image">
+			</a>
+			<a class="top-bar__title collection-link" href="./options.html#collection-container" target="_blank"
+				title="Open the full Collection in a new tab">
+				QuickPaste Collection
+			</a>
+			<button id="searchToggle" class="top-bar__quicksave" type="button" title="Search" aria-label="Search" aria-pressed="false">
+				<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="18" height="18" fill="none"
+					stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+					<circle cx="11" cy="11" r="8"></circle>
+					<line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+				</svg>
+			</button>
+			<button id="quickSaveToggle" class="top-bar__quicksave" type="button" title="Quick save" aria-label="Quick save">
+				<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="20" height="20" fill="none"
+					stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+					<line x1="12" y1="5" x2="12" y2="19"></line>
+					<line x1="5" y1="12" x2="19" y2="12"></line>
+				</svg>
+			</button>
+			<a class="top-bar__options" href="./options.html" target="_blank" title="Options" aria-label="Options">
+				<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="20" height="20" fill="none"
+					stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+					<circle cx="12" cy="12" r="3"></circle>
+					<path
+						d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33h0a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51h0a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82v0a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z">
+					</path>
+				</svg>
+			</a>
+		</nav>
+		<nav class="filter-tabs" role="tablist" aria-label="Filter clips">
+			<button type="button" class="filter-tab is-active" data-filter="all" role="tab" aria-selected="true">All</button>
+			<button type="button" class="filter-tab" data-filter="pinned" role="tab" aria-selected="false" title="Pinned" aria-label="Pinned">
+				<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16" fill="none"
+					stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+					<polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+				</svg>
+			</button>
+			<button type="button" class="filter-tab" data-filter="tagged" role="tab" aria-selected="false" title="Labeled" aria-label="Labeled">
+				<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16" fill="none"
+					stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+					<path d="M20.59 13.41 13.42 20.58a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path>
+					<line x1="7" y1="7" x2="7.01" y2="7"></line>
+				</svg>
+			</button>
+			<button type="button" class="filter-tab" data-filter="linked" role="tab" aria-selected="false" title="With source URL" aria-label="With source URL">
+				<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16" fill="none"
+					stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+					<path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
+					<path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
+				</svg>
+			</button>
+		</nav>
+		<div id="quickSaveArea" class="quicksave" hidden>
+			<textarea id="quickSaveText" class="quicksave__text" rows="3" placeholder="Paste or type a clip, then Save..."></textarea>
+			<div class="quicksave__actions">
+				<button id="quickSavePaste" class="quicksave__btn quicksave__btn--secondary" type="button"
+					title="Paste from clipboard">Paste</button>
+				<button id="quickSaveCancel" class="quicksave__btn quicksave__btn--secondary" type="button"
+					title="Cancel (Esc)">Cancel</button>
+				<button id="quickSaveCommit" class="quicksave__btn" type="button"
+					title="Save clip (Ctrl+Enter)">Save</button>
 			</div>
-		</ul>
-		<br>
+		</div>
+		<input type="search" id="popupSearch" class="search-input" placeholder="Search clips..." style="display:none;">
+		<div id="tagBanner" class="tag-banner" hidden>
+			<span class="tag-banner__label">Tag this clip:</span>
+			<input type="text" id="tagBannerInput" class="tag-banner__input" placeholder="e.g. research" maxlength="40">
+			<button type="button" id="tagBannerSave" class="tag-banner__btn"
+				title="Save tag (Enter)">Save</button>
+			<button type="button" id="tagBannerSkip" class="tag-banner__btn tag-banner__btn--secondary"
+				title="Skip tagging (Esc)">Skip</button>
+		</div>
 		<div class="container" id="paragraph-box"></div>
 	</div>
+	<script src="lib/storage.js"></script>
+	<script src="lib/settings.js"></script>
+	<script src="lib/format.js"></script>
+	<script src="lib/toast.js"></script>
+	<script src="lib/confirm.js"></script>
+	<script src="lib/search.js"></script>
+	<script src="lib/sendto.js"></script>
 	<script src="popup.js"></script>
 </body>
 

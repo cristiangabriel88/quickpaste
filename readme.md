@@ -1,130 +1,224 @@
 # QuickPaste
 
-#### by Constantinescu Cristian-Gabriel
+A fast, lightweight clipboard organizer for Chrome. Save text and image clips from any web page with a single right-click, then find, organize, and reuse them whenever you need.
 
-#### https://cristiangabriel.dev
+No account. No sign-up. No servers. Everything stays on your device.
 
-#### Video Demo: https://youtu.be/tDfbTet89mI
+- **Chrome Web Store:** [QuickPaste listing](https://chromewebstore.google.com/detail/kdlcijllofgjnpdghojpdhjjhnnffcgb)
+- **Website:** https://cristiangabriel.dev/QuickPaste/index.html
+- **Issues / support:** https://github.com/cristiangabriel88/quickpaste/issues
+- **Author:** Constantinescu Cristian-Gabriel — cristiconstantinescu88@gmail.com
 
-<br>
+---
 
-#### Description: QuickPaste is a free and lightweight Chrome extension that simplifies your copy-pasting experience by providing a quick and easy way to save and access frequently used snippets of text. Once installed, QuickPaste adds a context menu option to Chrome that allows you to save selected text to your QuickPaste library. You can then quickly access your saved snippets at any time by clicking the QuickPaste icon in your browser's toolbar or by pressing CTRL+Q or Command+Q. You can also go into your QuickPaste Collections page and see all of your snippets, and choose what you want to keep and what you want to delete.
+## Install
 
-<br>
+**From the Chrome Web Store (recommended)**
 
-#### I decided on this project because I took Javascript courses in the past and am comfortable with it, and also HTML and CSS. But I never made a chrome extension before, so I knew it would be a challenge.
+1. Open the [QuickPaste listing](https://chromewebstore.google.com/detail/kdlcijllofgjnpdghojpdhjjhnnffcgb).
+2. Click _Add to Chrome_, then confirm the permissions prompt.
+3. Pin the QuickPaste icon to the toolbar via the puzzle-piece menu.
 
-<br>
+**From source (for development or to try the latest unreleased build)**
 
-#### When I read on the final project page: "All that we ask is that you build something of interest to you, that you solve an actual problem, that you impact your community, or that you change the world." I decided to ask my friends for Chrome Extension ideeas that they would need, something that they would actually use. Two of them instantly replied with the same thing: "something fast and easy, to select some text and save it, like taking notes as you go, but no loging in, no account, really simple and fast." And I did exactly that, a fast and simple text saving tool that I now use myself and also my friends. I got so motivated that I made a website for it and enroled as a chrome developer and published it in the chrome store!
+1. Clone this repository.
+2. Open `chrome://extensions`, enable _Developer mode_ (top-right toggle).
+3. Click _Load unpacked_ and select the repo root (the directory containing `manifest.json`).
+4. Pin the QuickPaste icon to the toolbar.
 
-<br>
+There is no build step, package manager, or bundler — files are plain HTML/CSS/JS loaded directly by Chrome.
 
-#### For storage I used the local memory (chrome.storage.local) to store the saved clips, and the sync memory (chrome.storage.sync) to store setting prefferences.
+---
 
-<br>
+## Usage (10-second tour)
 
-# Features
+1. Select text on any web page.
+2. Right-click → **Save text to QuickPaste**.
+3. Click the QuickPaste toolbar icon (or press `Alt+Shift+Q`) to see your saved clip.
 
-#### - Hotkey "CTRL+Q" or "Command+Q"
+Same flow for images: right-click an image → **Save image to QuickPaste**.
 
-#### - Notifications On/OFF option
+Want to jot something down by hand? Open the popup and click the `+` button to type or paste a clip directly.
 
-#### - Button for redirection to the URL of text source
+---
 
-#### - Preserves selected paragraphs where possible
+## Features
 
-#### - If paragraph is too long, shows "View More..." in popup and redirects to collections when clicked
+### Save and capture
 
-#### - "Select All"/"Deselect All" Button
+- Right-click context menu for text and images on any site.
+- Manual quick-save form in the popup.
+- Optional auto-capture of `Ctrl+C` / `Cmd+C` events, with a per-domain blocklist for privacy. **Off by default.**
+- Keyboard shortcut to open the popup: `Alt+Shift+Q` (rebindable at `chrome://extensions/shortcuts`).
 
-#### - "Delete Selected" Button
+### Organize
 
-#### - Delete individual entry from popup
+- Pin important clips so they stay on top.
+- Add and edit per-clip **labels** via a dedicated tag-icon button on each clip. The editor shows your current labels as removable pills and offers a "Pick from existing" row of one-click suggestions drawn from every label already in use across your collection, so you stay consistent without retyping.
+- Filter by label from the **Label** dropdown in the Collection filter bar (next to Sort). Shows up to 30 labels ranked by usage count, each annotated with how many clips carry it.
+- Drag-and-drop reorder (in manual sort mode).
+- Sort by manual order, newest, oldest, or A–Z.
+- Edit clips in place — fix typos, change wording, merge paragraphs.
 
-<br>
+### Find anything fast
 
-## **_File contents:_**
+- Live search with fuzzy matching and typo-tolerance (e.g. `recevied` still matches `received`).
+- Match highlighting shows you where your query landed in each clip.
+- Filter by date range (today, last 7/30 days, custom) and by tag.
+- Save favourite searches and reapply them with one click.
 
-<br>
+### Bulk actions
 
-# background.js
+- Multi-select with checkboxes, plus Select All / Deselect All.
+- Bulk delete with a 6-second Undo toast.
+- Bulk copy joins selected clips using your chosen format (plain, with source URL, with timestamp, or Markdown).
 
-#### contains the code to create the context menu item, get the selected text and save it in an array.
+### Get clips out
 
-#### _Here is where I got in a bit of a jam. I found that when you select two lines of text and CTRL+C and then CTRL+V in a new file, the two lines are preserved. Here, using the selected text and the contextmenu, they are not preserved. Using the clipboard would have required extra permissions and after a whole day of documenting on the subject, I found it to be very very difficult in a Chrome extension, because of privacy issues. So I went with this solution: I found that sometimes when you extend your text selection past a paragraph that has a line separating it from the next paragraph, an extra white space is inserted at the end of the paragraph. So I used this to determine that that would be the end of a paragraph, and save it as a new element in an array. So the selected text is an array of paragraphs in an array of saved text-clips. This is the solution I found to work as close to the systems built-in clipboard._
+- One-click copy to the system clipboard.
+- "Copy with source URL" appends the original page link automatically.
+- Send to integrations:
+  - **Obsidian** — pre-fills a new note in your vault via the `obsidian://` URL scheme.
+  - **Notion** — copies the clip and opens a new Notion page; paste with `Ctrl+V`.
+  - **Google Docs** — copies the clip and opens a new Doc; paste with `Ctrl+V`.
+- Export the whole Collection to JSON or Markdown.
+- Import clips back from a JSON export.
 
-#### The URL of the website is also saved in storage for further use in the popup.js file
+### Sync (optional)
 
-#### After that, the array containing the selected text is saved at the end of the existing array containing the other saved texts, and the user is notified with a chrome notification, if the notifications are ON.
+- Mirror your pinned clips plus the most recent N clips across the Chrome browsers you're signed into, via your own Google account. **Off by default.** The developer has no access to your data.
 
-<br>
+### Looks and feel
 
-# manifest.json
+- Light and Dark themes.
+- Custom accent colour.
+- Compact or Comfortable density.
+- Adjustable preview length; toggle source URL and timestamp display.
 
-#### contains the manifest file for the extension. I made it with the help of the chrome documentation for manifest v3. I asked for storage, contextMenus and notification permissions, I set the icons, added a keyboard shortcut "Ctrl+Q" or "Command+Q", added the service worker, which in this case is the file from before, background.js, the options page and the default icon for the popup.
+### Housekeeping
 
-<br>
+- Optional auto-delete: prune clips older than 7, 30, or 90 days. Pinned clips are never pruned. **Off by default.**
+- Optional max clip count: cap your collection at 100, 500, or 1000 clips; oldest unpinned drop first. **Off by default.**
+- Deduplication: strict, normalized (case + whitespace ignored), or off.
+- Optional confirm-before-delete prompt.
 
-# options.css
+---
 
-#### contains CSS for the options.html page. **_ I decided to have a separate css file for each html file, because it was getting too much at one point, with different button sizes, font sizes and such_**
+## Privacy
 
-#### I used Bootstrap for all the pages, and then added some details, like font from google fonts, and some spacing, margins, and colors. I also added button CSS that I found online for pretty buttons, which I then modified to my liking. Also modified the scroll bar.
+QuickPaste does not collect personal information, browsing history, passwords, form data, or anything else you don't explicitly save. There are no servers. There are no analytics. There is no account system.
 
-<br>
+The extension requests the `<all_urls>` host permission for one reason: so the right-click _Save text_ and _Save image_ menu items work on every site you choose to use them on, and so the opt-in auto-capture feature can listen for your own `Ctrl+C` actions if you turn it on. The extension does not read page content on its own.
 
-# options.js
+Full privacy policy and per-permission justifications: see [`STORE_SUBMISSION.md`](STORE_SUBMISSION.md).
 
-#### Contains the code for the options page for the extension.
+---
 
-#### The first thing is a function to get the selected notification prefference and inform the user that the settings were saved when the Save button is clicked.
+## Architecture
 
-#### Then added an eventlistener to call this function when the save button is clicked. After that, the page needs to be initialized with the current saved setting of the notification prefference, and check the respective option radio button. Next step is to generate the collection of saved texts. The Delete Selected and the Select all buttons are by default hidden, and if there are elements in the array, meaning that there are saved texts, the buttons display is changed to "block".
+Three entry points + a small shared library, all sharing state through `chrome.storage`:
 
-#### Then each text clip is printed in a div, and gets an id from a for loop so as to refer to it later when the user wants to delete a specific text clip. The div also contains a checkbox with the same id. An event listener is added to listen when a checkbox is clicked, and when it is, the ID of the checkbox is added to an array of selected checkboxes. If the i value exists in the selectedCheckboxes array, it is removed from the array using the splice() method. After this, go through each text clip element with another "for" loop to print out each element as a new paragraph.
+| File                                          | Role                                                                                                                                                                                                 |
+| --------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `background.js`                               | Manifest V3 service worker. Registers the context menus, handles save clicks, manages the prune alarm, drives optional sync push/pull, and dispatches messages from the auto-capture content script. |
+| `popup.html` / `popup.js` / `popup.css`       | The toolbar popup: quick search, recent clips, per-clip actions, pin/edit/copy/delete, send-to integrations, and quick-save.                                                                         |
+| `options.html` / `options.js` / `options.css` | The full Collection: bulk operations, advanced filters, saved searches, drag-and-drop reorder, settings panel, import/export.                                                                        |
+| `offscreen.html` / `offscreen.js`             | A hidden helper page that performs clipboard writes (MV3 service workers can't access the clipboard directly).                                                                                       |
+| `content/capture.js`                          | Content script for opt-in auto-capture of `copy` events. No-op unless the user enables auto-capture.                                                                                                 |
+| `lib/storage.js`                              | Central CRUD layer for clips. Idempotent migration, write serialization via an internal lock. **All clip mutations go through here.**                                                                |
+| `lib/settings.js`                             | Centralized preference store with defaults and legacy-key migration.                                                                                                                                 |
+| `lib/sync.js`                                 | Mirrors recent + pinned clips to `chrome.storage.sync` (opt-in).                                                                                                                                     |
+| `lib/search.js`                               | Fuzzy matching + match highlighting.                                                                                                                                                                 |
+| `lib/format.js`                               | Relative/absolute time formatting and copy-format renderers (text, text+URL, Markdown, etc.).                                                                                                        |
+| `lib/exporter.js`                             | JSON and Markdown export/import.                                                                                                                                                                     |
+| `lib/sendto.js`                               | Obsidian / Notion / Google Docs integrations.                                                                                                                                                        |
+| `lib/toast.js`                                | Shared undo toast.                                                                                                                                                                                   |
+| `lib/confirm.js`                              | Shared confirm dialog backed by `<dialog>`.                                                                                                                                                          |
+| `lib/tooltip.js`                              | Custom themed tooltip system replacing the slow native `title=""` tooltip.                                                                                                                           |
+| `lib/savedSearches.js`                        | CRUD for named saved-search combos.                                                                                                                                                                  |
 
-#### After this, I implemented the functionality of the "Delete selected" button. It goes through the selected checkboxes array saved in storage and removes those divs with that ID, and also remove them from the selected checkbox array. After that it >location.reload(); reloads the page, so that the paragraphs are regenerated on the page and they get new ID's, so as to not get confused.
+For storage shape, migration behaviour, and gotchas, see [`CLAUDE.md`](CLAUDE.md).
 
-#### Next is the funcionality for the Select all button. It goes through the textArray, whose length will be equal to the number of checkboxes and sets all the checkboxes status to "true". Else deselect all, setting the checked status to "false". Every time the name of the button is changed from "Select All" to "Deselect All" to suit the situation.
+---
 
-#### The last thing is the back to top button which scrolls the page to 0,0 position.
+## Development
 
-<br>
+There is no build step, no `package.json`, no test runner. Workflow:
 
-# options.html
+1. Edit files in place.
+2. Reload the extension on `chrome://extensions` (click the reload icon on the card).
+3. Popup and options HTML/CSS/JS pick up changes on reopen; background-script edits require an explicit reload.
 
-#### Contains the html code for the options page, for when you click the "Options" button in the popup, or right click on the extension icon and select "Options". On this page you can see a table, containing your notification setting, and in the future add a dark mode setting and other preferences. After this table, there is the Collection of saved text clips, each with a checkbox. There is a button to delete the selected clips, and a button to select/deselect all text clips. Also a Back to Top button.
+**Inspecting:**
 
-<br>
+- Service worker logs: `chrome://extensions` → QuickPaste card → _Service worker_ link.
+- Popup logs: right-click the popup → _Inspect_.
+- Options page logs: open the options page, then `F12`.
+- Offscreen document: `chrome://extensions` → QuickPaste card → _Inspect views: offscreen.html_ (only visible while the document is alive — briefly, after an auto-copy save).
 
-# popup.js
+**Storage inspection (run in the service-worker console):**
 
-#### Contains the javascript code for the popup that appears when you click on the extension icon or press the keyboard shortcut "Ctrl+Q" or "Command+Q".
+```js
+chrome.storage.local.get("text", console.log); // all clips
+chrome.storage.sync.get("settings", console.log); // settings
+chrome.storage.sync.get("synced_clips", console.log); // sync mirror (if enabled)
+chrome.storage.local.get("saved_searches", console.log); // saved searches
+```
 
-#### It prints out the text saved in storage. Just as the collection on the options page, it creates a new div, then goes through the clip array, then each nested array, then "prints" it's value as a div containing the text, buttons and a horizontal line. It also counts the number of characters in the current paragraph and if it is more than 50 it stops generating the rest and instead puts a "View more..." button that redirects you to the collection on the options page.
+**Pre-submission and testing docs:**
 
-#### There is also a Delete button, that deletes the paragraph that has the button attached to it.
+- [`STORE_SUBMISSION.md`](STORE_SUBMISSION.md) — privacy policy, per-permission justifications, product description, submission checklist.
+- [`TESTING.md`](TESTING.md) — full manual QA matrix and static-analysis findings.
+- [`store-description.txt`](store-description.txt) — paste-ready text for the Chrome Web Store _Description_ field.
 
-#### I also added a "View URL" button that takes you back to the URL that you saved the text from.
+---
 
-<br>
+## Project structure
 
-# popup.css
+```
+quickpaste/
+├── manifest.json           MV3 manifest (permissions, commands, entry points)
+├── background.js           Service worker
+├── popup.html|css|js       Toolbar popup
+├── options.html|css|js     Options page + Collection
+├── offscreen.html|js       Clipboard write helper
+├── content/
+│   └── capture.js          Opt-in auto-capture content script
+├── lib/                    Shared libraries (storage, settings, sync, search, …)
+├── icons/                  Toolbar and store icons
+├── scripts/                Local utility scripts (not loaded by the extension)
+├── CLAUDE.md               Codebase guide for Claude Code
+├── STORE_SUBMISSION.md     Web Store submission pack (policy, justifications, description)
+├── TESTING.md              Manual QA plan and static-analysis findings
+└── store-description.txt   Paste-ready Web Store listing description
+```
 
-#### Contains CSS for the popup.html page
+---
 
-<br>
+## Permissions
 
-# popup.html
+| Permission         | Why                                                                                                                                                         |
+| ------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `storage`          | Save clips, tags, pin state, and settings locally; optionally mirror via Chrome Sync.                                                                       |
+| `contextMenus`     | Add _Save text to QuickPaste_ and _Save image to QuickPaste_ to the right-click menu.                                                                       |
+| `notifications`    | Optional confirmation toast on save (off-able in settings).                                                                                                 |
+| `clipboardWrite`   | Optional "auto-copy on save" — writes the saved clip to the system clipboard.                                                                               |
+| `offscreen`        | Required by MV3 to perform the clipboard write from a hidden helper page (service workers can't access the clipboard directly).                             |
+| `alarms`           | Schedules the once-per-day auto-delete prune.                                                                                                               |
+| Host: `<all_urls>` | So the right-click menu items work on any site and so opt-in auto-capture can observe `Ctrl+C` events. The extension does not read page content on its own. |
 
-#### Contains the html code for the popup of the extension. It has a navbar made with bootstrap that has the logo, which if clicked, redirects you to my website, where I made a sort of homepage for the extension, a button that takes you to the collections, and an Options button, that takes you to the options page.
+---
 
-#### Although the options page and the collections page are the same, I decided to have separate buttons for each, so that in the future, when there are multiple settings, or I decide to change the formating of the page, I do not need to change the popup.html navbar.
+## Origin
 
-<br>
+QuickPaste started as a Harvard CS50x final project. The brief was to "build something of interest to you, that you solve an actual problem, that you impact your community, or that you change the world." Friends asked for "something fast and easy, to select some text and save it, like taking notes as you go, but no logging in, no account, really simple and fast." That became v1.0.
 
-# Thank you!
+A specific early design decision worth flagging: the original idea was to use the system clipboard so multi-paragraph selections kept their structure, but the clipboard API required permissions that hurt the install-time UX. Instead, `background.js` splits `selectionText` on runs of 2+ whitespace characters as a heuristic for paragraph boundaries. It's not perfect, but it preserves structure on most real-world pages without asking for the clipboard. That heuristic is still the one in production.
 
-### Thank you so much for this course! I learned so much from it, and more than that, I gained the courage to take on immense learning challenges with curiosity! Thank you so much for the beautifully crafted projects for each week, for the lectures, the notes and the practice problems! Have a great day!
-"# quickpaste" 
+v2.0 (2026) was a near-complete rewrite around the same core idea: image clips, pins, tags, drag-and-drop reorder, fuzzy search, in-place edit, bulk operations with undo, opt-in auto-capture and sync, Send-to integrations, JSON/Markdown import/export, retention rules, and the light/dark themed UI.
+
+---
+
+## License
+
+Released for personal and educational use. Contributions and bug reports welcome via [GitHub issues](https://github.com/cristiangabriel88/quickpaste/issues).
