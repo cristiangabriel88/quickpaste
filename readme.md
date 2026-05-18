@@ -54,7 +54,8 @@ Want to jot something down by hand? Open the popup and click the `+` button to t
 ### Organize
 
 - Pin important clips so they stay on top.
-- Tag clips and filter by tag.
+- Add and edit per-clip **labels** via a dedicated tag-icon button on each clip. The editor shows your current labels as removable pills and offers a "Pick from existing" row of one-click suggestions drawn from every label already in use across your collection, so you stay consistent without retyping.
+- Filter by label from the **Label** dropdown in the Collection filter bar (next to Sort). Shows up to 30 labels ranked by usage count, each annotated with how many clips carry it.
 - Drag-and-drop reorder (in manual sort mode).
 - Sort by manual order, newest, oldest, or A–Z.
 - Edit clips in place — fix typos, change wording, merge paragraphs.
