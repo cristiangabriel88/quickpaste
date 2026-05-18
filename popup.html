@@ -22,9 +22,24 @@
 				title="Visit Homepage">
 				<img src="./icons/logo-no-text.png" alt="Logo" class="logo-image">
 			</a>
-			<a class="top-bar__title collection-link" href="./options.html#collection-container" target="_blank">
+			<a class="top-bar__title collection-link" href="./options.html#collection-container" target="_blank"
+				title="Open the full Collection in a new tab">
 				QuickPaste Collection
 			</a>
+			<button id="searchToggle" class="top-bar__quicksave" type="button" title="Search" aria-label="Search" aria-pressed="false">
+				<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="18" height="18" fill="none"
+					stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+					<circle cx="11" cy="11" r="8"></circle>
+					<line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+				</svg>
+			</button>
+			<button id="quickSaveToggle" class="top-bar__quicksave" type="button" title="Quick save" aria-label="Quick save">
+				<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="20" height="20" fill="none"
+					stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+					<line x1="12" y1="5" x2="12" y2="19"></line>
+					<line x1="5" y1="12" x2="19" y2="12"></line>
+				</svg>
+			</button>
 			<a class="top-bar__options" href="./options.html" target="_blank" title="Options" aria-label="Options">
 				<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="20" height="20" fill="none"
 					stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -35,12 +50,35 @@
 				</svg>
 			</a>
 		</nav>
+		<div id="quickSaveArea" class="quicksave" hidden>
+			<textarea id="quickSaveText" class="quicksave__text" rows="3" placeholder="Paste or type a clip, then Save..."></textarea>
+			<div class="quicksave__actions">
+				<button id="quickSavePaste" class="quicksave__btn quicksave__btn--secondary" type="button"
+					title="Paste from clipboard">Paste</button>
+				<button id="quickSaveCancel" class="quicksave__btn quicksave__btn--secondary" type="button"
+					title="Cancel (Esc)">Cancel</button>
+				<button id="quickSaveCommit" class="quicksave__btn" type="button"
+					title="Save clip (Ctrl+Enter)">Save</button>
+			</div>
+		</div>
 		<input type="search" id="popupSearch" class="search-input" placeholder="Search clips..." style="display:none;">
+		<div id="tagBanner" class="tag-banner" hidden>
+			<span class="tag-banner__label">Tag this clip:</span>
+			<input type="text" id="tagBannerInput" class="tag-banner__input" placeholder="e.g. research" maxlength="40">
+			<button type="button" id="tagBannerSave" class="tag-banner__btn"
+				title="Save tag (Enter)">Save</button>
+			<button type="button" id="tagBannerSkip" class="tag-banner__btn tag-banner__btn--secondary"
+				title="Skip tagging (Esc)">Skip</button>
+		</div>
 		<div class="container" id="paragraph-box"></div>
 	</div>
 	<script src="lib/storage.js"></script>
+	<script src="lib/settings.js"></script>
 	<script src="lib/format.js"></script>
 	<script src="lib/toast.js"></script>
+	<script src="lib/confirm.js"></script>
+	<script src="lib/search.js"></script>
+	<script src="lib/sendto.js"></script>
 	<script src="popup.js"></script>
 </body>
 
