@@ -244,6 +244,20 @@ document.addEventListener("keydown", function (e) {
   }
 });
 
+// * ============ FOOTER (year + version) ==================
+(function hydrateFooter() {
+  let yearEl = document.getElementById("footerYear");
+  if (yearEl) yearEl.textContent = String(new Date().getFullYear());
+
+  let versionEl = document.getElementById("footerVersion");
+  if (versionEl && chrome.runtime && typeof chrome.runtime.getManifest === "function") {
+    try {
+      let manifest = chrome.runtime.getManifest();
+      if (manifest && manifest.version) versionEl.textContent = manifest.version;
+    } catch (_) { /* leave fallback "2.0" in place */ }
+  }
+})();
+
 // * ============ COLLECTION RENDER =========================
 const SVG_PIN_FILLED =
   '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16" fill="currentColor" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">' +

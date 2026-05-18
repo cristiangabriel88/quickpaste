@@ -351,6 +351,99 @@ function renderPopup(clips) {
     });
     actionRow.appendChild(pinButton);
 
+    //?############# ADD LABEL ###########################
+    let labelPicker = document.createElement("details");
+    labelPicker.className = "add-label";
+    let labelSummary = document.createElement("summary");
+    labelSummary.className = "icon-button add-label__summary";
+    labelSummary.title = "Add label";
+    labelSummary.setAttribute("aria-label", "Add label");
+    labelSummary.innerHTML = LABEL_PLUS_SVG;
+    labelPicker.appendChild(labelSummary);
+    let labelMenu = document.createElement("div");
+    labelMenu.className = "add-label__menu";
+    function renderLabelMenu() {
+      labelMenu.innerHTML = "";
+      let heading = document.createElement("div");
+      heading.className = "add-label__heading";
+      heading.innerText = "Labels";
+      labelMenu.appendChild(heading);
+
+      let applied = Array.isArray(clip.tags) ? clip.tags.slice() : [];
+      let labelSet = new Set(allLabels);
+      applied.forEach(function (t) { labelSet.add(t); });
+      let ordered = Array.from(labelSet).sort(function (a, b) { return a.localeCompare(b); });
+
+      if (ordered.length === 0) {
+        let none = document.createElement("div");
+        none.className = "add-label__empty";
+        none.innerText = "No labels yet — create one below.";
+        labelMenu.appendChild(none);
+      } else {
+        ordered.forEach(function (tag) {
+          let opt = document.createElement("button");
+          opt.type = "button";
+          opt.className = "add-label__option" + (applied.indexOf(tag) !== -1 ? " add-label__option--applied" : "");
+          let span = document.createElement("span");
+          span.innerText = tag;
+          opt.appendChild(span);
+          opt.addEventListener("click", function (e) {
+            e.stopPropagation();
+            let cur = Array.isArray(clip.tags) ? clip.tags.slice() : [];
+            let idx = cur.indexOf(tag);
+            if (idx === -1) cur.push(tag);
+            else cur.splice(idx, 1);
+            QPStorage.updateClip(clip.id, { tags: cur }).then(function () {
+              QPStorage.getClips().then(renderPopup);
+            });
+          });
+          labelMenu.appendChild(opt);
+        });
+      }
+
+      let creator = document.createElement("div");
+      creator.className = "add-label__new";
+      let input = document.createElement("input");
+      input.type = "text";
+      input.className = "add-label__input";
+      input.placeholder = "New label";
+      input.maxLength = 40;
+      let commit = document.createElement("button");
+      commit.type = "button";
+      commit.className = "add-label__commit";
+      commit.innerText = "Add";
+      function commitNewLabel() {
+        let val = (input.value || "").trim();
+        if (!val) return;
+        let cur = Array.isArray(clip.tags) ? clip.tags.slice() : [];
+        if (cur.indexOf(val) === -1) cur.push(val);
+        QPStorage.updateClip(clip.id, { tags: cur }).then(function () {
+          QPStorage.getClips().then(renderPopup);
+        });
+      }
+      commit.addEventListener("click", function (e) {
+        e.stopPropagation();
+        commitNewLabel();
+      });
+      input.addEventListener("keydown", function (e) {
+        if (e.key === "Enter") { e.preventDefault(); commitNewLabel(); }
+        else if (e.key === "Escape") { e.preventDefault(); labelPicker.removeAttribute("open"); }
+      });
+      input.addEventListener("click", function (e) { e.stopPropagation(); });
+      creator.appendChild(input);
+      creator.appendChild(commit);
+      labelMenu.appendChild(creator);
+    }
+    renderLabelMenu();
+    labelPicker.appendChild(labelMenu);
+    labelPicker.addEventListener("toggle", function () {
+      if (labelPicker.open) {
+        let input = labelMenu.querySelector(".add-label__input");
+        if (input) setTimeout(function () { input.focus(); }, 20);
+      }
+    });
+    actionRow.appendChild(labelPicker);
+
     //?############# EDIT ###########################
     if (clip.kind !== "image") {
       let editButton = document.createElement("button");
@@ -454,99 +547,6 @@ function renderPopup(clips) {
     });
     sendTo.appendChild(sendMenu);
     actionRow.appendChild(sendTo);
-
-    //?############# ADD LABEL ###########################
-    let labelPicker = document.createElement("details");
-    labelPicker.className = "add-label";
-    let labelSummary = document.createElement("summary");
-    labelSummary.className = "icon-button add-label__summary";
-    labelSummary.title = "Add label";
-    labelSummary.setAttribute("aria-label", "Add label");
-    labelSummary.innerHTML = LABEL_PLUS_SVG;
-    labelPicker.appendChild(labelSummary);
-    let labelMenu = document.createElement("div");
-    labelMenu.className = "add-label__menu";
-    function renderLabelMenu() {
-      labelMenu.innerHTML = "";
-      let heading = document.createElement("div");
-      heading.className = "add-label__heading";
-      heading.innerText = "Labels";
-      labelMenu.appendChild(heading);
-
-      let applied = Array.isArray(clip.tags) ? clip.tags.slice() : [];
-      let labelSet = new Set(allLabels);
-      applied.forEach(function (t) { labelSet.add(t); });
-      let ordered = Array.from(labelSet).sort(function (a, b) { return a.localeCompare(b); });
-
-      if (ordered.length === 0) {
-        let none = document.createElement("div");
-        none.className = "add-label__empty";
-        none.innerText = "No labels yet — create one below.";
-        labelMenu.appendChild(none);
-      } else {
-        ordered.forEach(function (tag) {
-          let opt = document.createElement("button");
-          opt.type = "button";
-          opt.className = "add-label__option" + (applied.indexOf(tag) !== -1 ? " add-label__option--applied" : "");
-          let span = document.createElement("span");
-          span.innerText = tag;
-          opt.appendChild(span);
-          opt.addEventListener("click", function (e) {
-            e.stopPropagation();
-            let cur = Array.isArray(clip.tags) ? clip.tags.slice() : [];
-            let idx = cur.indexOf(tag);
-            if (idx === -1) cur.push(tag);
-            else cur.splice(idx, 1);
-            QPStorage.updateClip(clip.id, { tags: cur }).then(function () {
-              QPStorage.getClips().then(renderPopup);
-            });
-          });
-          labelMenu.appendChild(opt);
-        });
-      }
-
-      let creator = document.createElement("div");
-      creator.className = "add-label__new";
-      let input = document.createElement("input");
-      input.type = "text";
-      input.className = "add-label__input";
-      input.placeholder = "New label";
-      input.maxLength = 40;
-      let commit = document.createElement("button");
-      commit.type = "button";
-      commit.className = "add-label__commit";
-      commit.innerText = "Add";
-      function commitNewLabel() {
-        let val = (input.value || "").trim();
-        if (!val) return;
-        let cur = Array.isArray(clip.tags) ? clip.tags.slice() : [];
-        if (cur.indexOf(val) === -1) cur.push(val);
-        QPStorage.updateClip(clip.id, { tags: cur }).then(function () {
-          QPStorage.getClips().then(renderPopup);
-        });
-      }
-      commit.addEventListener("click", function (e) {
-        e.stopPropagation();
-        commitNewLabel();
-      });
-      input.addEventListener("keydown", function (e) {
-        if (e.key === "Enter") { e.preventDefault(); commitNewLabel(); }
-        else if (e.key === "Escape") { e.preventDefault(); labelPicker.removeAttribute("open"); }
-      });
-      input.addEventListener("click", function (e) { e.stopPropagation(); });
-      creator.appendChild(input);
-      creator.appendChild(commit);
-      labelMenu.appendChild(creator);
-    }
-    renderLabelMenu();
-    labelPicker.appendChild(labelMenu);
-    labelPicker.addEventListener("toggle", function () {
-      if (labelPicker.open) {
-        let input = labelMenu.querySelector(".add-label__input");
-        if (input) setTimeout(function () { input.focus(); }, 20);
-      }
-    });
-    actionRow.appendChild(labelPicker);
 
     //?############# DELETE ###########################
     let deleteButton = document.createElement("button");
