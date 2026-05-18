@@ -1,7 +1,7 @@
 {
 	"manifest_version": 3,
 	"name": "QuickPaste",
-	"version": "1.2",
+	"version": "2.0",
 	"description": "Save text clips from websites as Notes in a Collection",
 	"permissions": [
 		"storage",
@@ -30,8 +30,8 @@
 	"commands": {
 		"_execute_action": {
 			"suggested_key": {
-				"default": "Ctrl+Q",
-				"mac": "Command+Q"
+				"default": "Alt+Shift+Q",
+				"mac": "Alt+Shift+Q"
 			}
 		}
 	},

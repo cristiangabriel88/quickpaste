@@ -178,25 +178,40 @@ function renderPopup(clips) {
       img.loading = "lazy";
       newContainer.appendChild(img);
     } else {
-      let letterCount = 0;
       let paragraphs = clip.text || [];
+      let remaining = previewLength;
+      let truncated = false;
       for (let j = 0; j < paragraphs.length; j++) {
-        letterCount += paragraphs[j].length;
+        let para = paragraphs[j];
+        if (remaining <= 0) { truncated = true; break; }
         let newParagraph = document.createElement("p");
-        if (letterCount < previewLength) {
-          newParagraph.className = "paragraph-text";
-          newParagraph.dataset.originalText = paragraphs[j];
-          newParagraph.appendChild(document.createTextNode(paragraphs[j]));
+        newParagraph.className = "paragraph-text";
+        if (para.length <= remaining) {
+          newParagraph.dataset.originalText = para;
+          newParagraph.appendChild(document.createTextNode(para));
           newContainer.appendChild(newParagraph);
+          remaining -= para.length;
         } else {
-          let linkForMore = document.createElement("a");
-          linkForMore.href = "./options.html#" + encodeURIComponent(clip.id);
-          linkForMore.target = "_blank";
-          linkForMore.innerText = "View more...";
-          newContainer.appendChild(linkForMore);
-          newContainer.appendChild(document.createElement("br"));
+          // Truncate at the last whitespace boundary so we don't slice mid-word;
+          // if there's no whitespace to break on, accept the hard cut.
+          let snippet = para.slice(0, remaining);
+          let wsCut = snippet.search(/\s+\S*$/);
+          if (wsCut > Math.floor(remaining * 0.5)) snippet = snippet.slice(0, wsCut);
+          snippet = snippet.replace(/\s+$/, "") + "…";
+          newParagraph.dataset.originalText = snippet;
+          newParagraph.appendChild(document.createTextNode(snippet));
+          newContainer.appendChild(newParagraph);
+          truncated = true;
           break;
         }
+      }
+      if (truncated) {
+        let linkForMore = document.createElement("a");
+        linkForMore.href = "./options.html#" + encodeURIComponent(clip.id);
+        linkForMore.target = "_blank";
+        linkForMore.innerText = "View more...";
+        newContainer.appendChild(linkForMore);
+        newContainer.appendChild(document.createElement("br"));
       }
     }
 
@@ -322,12 +337,16 @@ function renderPopup(clips) {
       });
     }
     addSendOption("Notion (copy + open)", function () {
-      QPSendTo.notion(clip);
-      flashButton(sendSummary, "Copied — paste in Notion");
+      QPSendTo.notion(clip).then(
+        function () { flashButton(sendSummary, "Copied — paste in Notion"); },
+        function () { flashButton(sendSummary, "Copy failed"); }
+      );
     });
     addSendOption("Google Docs (copy + open)", function () {
-      QPSendTo.googleDocs(clip);
-      flashButton(sendSummary, "Copied — paste in Docs");
+      QPSendTo.googleDocs(clip).then(
+        function () { flashButton(sendSummary, "Copied — paste in Docs"); },
+        function () { flashButton(sendSummary, "Copy failed"); }
+      );
     });
     sendTo.appendChild(sendMenu);
     actionRow.appendChild(sendTo);

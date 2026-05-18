@@ -7,6 +7,27 @@ let currentDateEnd = "";
 let currentTagFilter = "";       // tag string; empty = no tag filter
 let lastDragEndTime = 0;         // suppresses click-to-select right after a drop
 
+// Serialize selectedCheckboxes read-modify-write so rapid checkbox toggles
+// don't clobber each other (chrome.storage callbacks can interleave).
+let selectionQueue = Promise.resolve();
+function mutateSelection(transform) {
+  let next = selectionQueue.then(function () {
+    return new Promise(function (resolve) {
+      chrome.storage.local.get({ selectedCheckboxes: [] }, function (res) {
+        let current = (res.selectedCheckboxes || []).filter(function (v) {
+          return typeof v === "string";
+        });
+        let updated = transform(current);
+        chrome.storage.local.set({ selectedCheckboxes: updated }, function () {
+          resolve(updated);
+        });
+      });
+    });
+  });
+  selectionQueue = next.catch(function () {});
+  return next;
+}
+
 function applyVisualSettings(settings) {
   let theme = settings.theme === "dark" ? "dark" : "light";
   document.documentElement.setAttribute("data-theme", theme);
@@ -327,19 +348,17 @@ function renderCollection(clips) {
       if (newCheckbox.checked) newContainer.classList.add("is-selected");
 
       function persistSelectionState() {
-        chrome.storage.local.get({ selectedCheckboxes: [] }, function (res) {
-          let list = (res.selectedCheckboxes || []).filter(function (v) {
-            return typeof v === "string";
-          });
-          if (newCheckbox.checked) {
+        let nowChecked = newCheckbox.checked;
+        if (nowChecked) newContainer.classList.add("is-selected");
+        else newContainer.classList.remove("is-selected");
+        mutateSelection(function (list) {
+          if (nowChecked) {
             if (list.indexOf(clip.id) === -1) list.push(clip.id);
-            newContainer.classList.add("is-selected");
           } else {
             let idx = list.indexOf(clip.id);
             if (idx > -1) list.splice(idx, 1);
-            newContainer.classList.remove("is-selected");
           }
-          chrome.storage.local.set({ selectedCheckboxes: list }, function () {});
+          return list;
         });
       }
       newCheckbox.addEventListener("click", function (e) {
@@ -462,12 +481,16 @@ function renderCollection(clips) {
         });
       }
       addSendOption("Notion (copy + open)", function () {
-        QPSendTo.notion(clip);
-        flashButton(sendSummary, "Copied — paste in Notion");
+        QPSendTo.notion(clip).then(
+          function () { flashButton(sendSummary, "Copied — paste in Notion"); },
+          function () { flashButton(sendSummary, "Copy failed"); }
+        );
       });
       addSendOption("Google Docs (copy + open)", function () {
-        QPSendTo.googleDocs(clip);
-        flashButton(sendSummary, "Copied — paste in Docs");
+        QPSendTo.googleDocs(clip).then(
+          function () { flashButton(sendSummary, "Copied — paste in Docs"); },
+          function () { flashButton(sendSummary, "Copy failed"); }
+        );
       });
       sendTo.appendChild(sendMenu);
       headerRow.appendChild(sendTo);
@@ -880,6 +903,9 @@ QPStorage.getClips().then(function (clips) {
         return typeof v === "string";
       });
       if (selectedIds.length === 0) return;
+      // Snapshot for undo: if the user undoes, they probably want the same
+      // selection back so they can take a different action (e.g. Copy instead).
+      let priorSelection = selectedIds.slice();
 
       let runDelete = function () {
         QPStorage.deleteClips(selectedIds).then(function (snapshot) {
@@ -890,7 +916,7 @@ QPStorage.getClips().then(function (clips) {
             let message = count + " clip" + (count === 1 ? "" : "s") + " deleted";
             QPToast.show(message, function () {
               QPStorage.restoreClips(snapshot).then(function (restored) {
-                chrome.storage.local.set({ selectedCheckboxes: [] }, function () {
+                chrome.storage.local.set({ selectedCheckboxes: priorSelection }, function () {
                   renderCollection(restored);
                 });
               });
@@ -952,33 +978,38 @@ QPStorage.getClips().then(function (clips) {
     let selecting = selectAllButton.innerText === "Select All";
     selectAllButton.innerText = selecting ? "Deselect All" : "Select All";
 
-    chrome.storage.local.get({ selectedCheckboxes: [] }, function (result) {
-      let list = (result.selectedCheckboxes || []).filter(function (v) {
-        return typeof v === "string";
-      });
+    // Build the set of visible clip ids in one DOM pass, then queue the storage
+    // mutation so it stays ordered with any per-checkbox writes in flight.
+    let visibleIds = [];
+    let containers = document.querySelectorAll(
+      "#collection-container .paragraph-container"
+    );
+    containers.forEach(function (container) {
+      if (container.style.display === "none") return;
+      let id = container.dataset.clipId;
+      if (!id) return;
+      let checkbox = container.querySelector('input[type="checkbox"]');
+      if (!checkbox) return;
+      visibleIds.push(id);
+      if (selecting) {
+        checkbox.checked = true;
+        container.classList.add("is-selected");
+      } else {
+        checkbox.checked = false;
+        container.classList.remove("is-selected");
+      }
+    });
 
-      let containers = document.querySelectorAll(
-        "#collection-container .paragraph-container"
-      );
-      containers.forEach(function (container) {
-        if (container.style.display === "none") return;
-        let id = container.dataset.clipId;
-        if (!id) return;
-        let checkbox = container.querySelector('input[type="checkbox"]');
-        if (!checkbox) return;
-        if (selecting) {
+    mutateSelection(function (list) {
+      if (selecting) {
+        for (let id of visibleIds) {
           if (list.indexOf(id) === -1) list.push(id);
-          checkbox.checked = true;
-          container.classList.add("is-selected");
-        } else {
-          let idx = list.indexOf(id);
-          if (idx > -1) list.splice(idx, 1);
-          checkbox.checked = false;
-          container.classList.remove("is-selected");
         }
-      });
-
-      chrome.storage.local.set({ selectedCheckboxes: list }, function () {});
+      } else {
+        let drop = new Set(visibleIds);
+        list = list.filter(function (id) { return !drop.has(id); });
+      }
+      return list;
     });
   });
 });
