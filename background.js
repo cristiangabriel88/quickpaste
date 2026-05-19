@@ -103,7 +103,7 @@ chrome.contextMenus.onClicked.addListener(function (clickData) {
         }
         chrome.notifications.create({
           type: "basic",
-          iconUrl: "./icons/logo48x48.png",
+          iconUrl: "./icons/logo48x48-white.png",
           title: "QuickPaste:",
           message: body,
           requireInteraction: false,
@@ -145,7 +145,7 @@ function handleImageSave(clickData) {
           : "Image saved";
         chrome.notifications.create({
           type: "basic",
-          iconUrl: "./icons/logo48x48.png",
+          iconUrl: "./icons/logo48x48-white.png",
           title: "QuickPaste:",
           message: body,
           requireInteraction: false,

@@ -41,10 +41,10 @@
 	"options_page": "options.html",
 	"action": {
 		"default_icon": {
-			"16": "/icons/logo16x16-white.png",
-			"32": "/icons/logo32x32-white.png",
-			"48": "/icons/logo48x48-white.png",
-			"128": "/icons/logo128x128-white.png"
+			"16": "/icons/logo16x16.png",
+			"32": "/icons/logo32x32.png",
+			"48": "/icons/logo48x48.png",
+			"128": "/icons/logo128x128.png"
 		},
 		"default_popup": "popup.html"
 	}
