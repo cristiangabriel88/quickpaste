@@ -142,6 +142,21 @@
 				</div>
 			</details>
 
+			<details class="setting-group">
+				<summary class="setting-group__title">Auto-capture</summary>
+				<div class="setting-group__options">
+					<label class="setting-option">
+						<input type="checkbox" data-setting="autoCapture" data-setting-control="checkbox">
+						<span>Auto-save Ctrl+C copies</span>
+					</label>
+					<label class="setting-field">
+						<span class="setting-field__label">Blocklist (one domain per line)</span>
+						<textarea class="setting-field__control setting-field__textarea" rows="4" placeholder="mail.google.com&#10;1password.com" data-setting="autoCaptureBlocklist" data-setting-control="textarea-list"></textarea>
+					</label>
+					<p class="setting-group__note">Copies on the listed domains will be ignored. Off by default; the extension still needs <em>Read and change all your data on all websites</em> for the capture script to attach.</p>
+				</div>
+			</details>
+
 			<details class="setting-group" open>
 				<summary class="setting-group__title">Notifications</summary>
 				<div class="setting-group__options">
@@ -276,21 +291,6 @@
 						<span class="setting-field__label">Obsidian vault name</span>
 						<input type="text" class="setting-field__control" placeholder="e.g. Notes" data-setting="obsidianVault" data-setting-control="text">
 					</label>
-				</div>
-			</details>
-
-			<details class="setting-group">
-				<summary class="setting-group__title">Auto-capture</summary>
-				<div class="setting-group__options">
-					<label class="setting-option">
-						<input type="checkbox" data-setting="autoCapture" data-setting-control="checkbox">
-						<span>Auto-save Ctrl+C copies</span>
-					</label>
-					<label class="setting-field">
-						<span class="setting-field__label">Blocklist (one domain per line)</span>
-						<textarea class="setting-field__control setting-field__textarea" rows="4" placeholder="mail.google.com&#10;1password.com" data-setting="autoCaptureBlocklist" data-setting-control="textarea-list"></textarea>
-					</label>
-					<p class="setting-group__note">Copies on the listed domains will be ignored. Off by default; the extension still needs <em>Read and change all your data on all websites</em> for the capture script to attach.</p>
 				</div>
 			</details>
 

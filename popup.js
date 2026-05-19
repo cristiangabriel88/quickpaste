@@ -3,6 +3,19 @@ let currentQuery = "";
 let searchOpen = false;
 let currentFilter = "all"; // "all" | "pinned" | "tagged" | "linked"
 
+// Render state for incremental rendering. We cache the full clip list and the
+// pre-filtered visible slice, then append in batches as the user scrolls.
+// This keeps the popup responsive even with thousands of clips.
+const POPUP_BATCH_SIZE = 50;
+let renderState = {
+  clips: [],
+  visible: [],
+  cursor: 0,
+  allLabels: [],
+  observer: null,
+  sentinel: null,
+};
+
 function applyVisualSettings(settings) {
   let theme = settings.theme === "dark" ? "dark" : "light";
   document.documentElement.setAttribute("data-theme", theme);
@@ -22,6 +35,21 @@ function clipPassesFilter(clip) {
   if (currentFilter === "tagged") return Array.isArray(clip.tags) && clip.tags.length > 0;
   if (currentFilter === "linked") return typeof clip.url === "string" && clip.url.indexOf("http") === 0;
   return true;
+}
+
+function clipMatchesQuery(clip, query, scope) {
+  if (!query) return true;
+  let textPart = clip.kind === "image"
+    ? (clip.src || "")
+    : (clip.text || []).join(" ");
+  let tagsPart = Array.isArray(clip.tags) ? clip.tags.join(" ") : "";
+  let bodyHaystack = (textPart + " " + tagsPart).toLowerCase();
+  let urlHaystack = (clip.url || "").toLowerCase();
+  let haystack;
+  if (scope === "text") haystack = bodyHaystack;
+  else if (scope === "url") haystack = urlHaystack;
+  else haystack = bodyHaystack + " " + urlHaystack;
+  return haystack.indexOf(query) !== -1;
 }
 
 const PIN_SVG_FILLED =
@@ -161,362 +189,304 @@ function flashButton(btn, label) {
   }, 1200);
 }
 
-function renderPopup(clips) {
-  let paragraphBox = document.querySelector("#paragraph-box");
-  let searchInput = document.getElementById("popupSearch");
-  paragraphBox.innerHTML = "";
-
-  let sortMode = (appliedSettings && appliedSettings.sortMode) || "manual";
+// Builds the per-clip card. Heavy submenus (label picker, send-to) are
+// constructed lazily on first open so a 5000-clip render doesn't pre-build
+// 5000 dropdowns the user will never touch.
+function buildPopupClipCard(clip) {
   let previewLength = Number(appliedSettings && appliedSettings.previewLength) || 500;
   let confirmDelete = !!(appliedSettings && appliedSettings.confirmDelete);
 
-  let ordered = QPStorage.sortForDisplay(clips, sortMode).filter(clipPassesFilter);
-  searchInput.style.display = searchOpen ? "" : "none";
+  let newContainer = document.createElement("div");
+  newContainer.dataset.clipId = clip.id;
+  newContainer.dataset.url = clip.url || "";
+  let clipBodyText = clip.kind === "image" ? (clip.src || "") : (clip.text || []).join(" ");
+  let clipTagsText = Array.isArray(clip.tags) ? clip.tags.join(" ") : "";
+  newContainer.dataset.searchHaystack = (clipBodyText + " " + clipTagsText).toLowerCase();
+  newContainer.className = "paragraph-container" + (clip.pinned ? " paragraph-container--pinned" : "");
 
-  // Build the union of labels across ALL clips (not just filtered) so the
-  // Add-Label picker offers the same vocabulary regardless of the active tab.
-  let allLabels = [];
-  let seenLabel = new Set();
-  for (let c of clips) {
-    if (!Array.isArray(c.tags)) continue;
-    for (let t of c.tags) {
-      if (typeof t !== "string" || !t || seenLabel.has(t)) continue;
-      seenLabel.add(t);
-      allLabels.push(t);
-    }
-  }
-  allLabels.sort(function (a, b) { return a.localeCompare(b); });
+  //?############# CLIP META HEADER ###########################
+  let meta = document.createElement("div");
+  meta.className = "clip-meta";
 
-  if (ordered.length === 0) {
-    let empty = document.createElement("div");
-    empty.className = "qp-empty";
-    if (currentFilter !== "all" && clips.length > 0) {
-      empty.classList.add("qp-empty--filtered");
-      let title = document.createElement("p");
-      title.className = "qp-empty__title";
-      let label = currentFilter === "pinned" ? "pinned" :
-                  currentFilter === "tagged" ? "labeled" : "linked";
-      title.innerText = "No " + label + " clips";
-      let hint = document.createElement("p");
-      hint.className = "qp-empty__hint qp-empty__hint--muted";
-      hint.innerText = "Switch to All to see everything.";
-      empty.appendChild(title);
-      empty.appendChild(hint);
-    } else {
-      let title = document.createElement("p");
-      title.className = "qp-empty__title";
-      title.innerText = "No clips yet";
-      let step1 = document.createElement("p");
-      step1.className = "qp-empty__hint";
-      step1.innerText = "1. Select text on any page";
-      let step2 = document.createElement("p");
-      step2.className = "qp-empty__hint";
-      step2.innerText = "2. Right-click and choose “Save text to QuickPaste”";
-      let step3 = document.createElement("p");
-      step3.className = "qp-empty__hint";
-      step3.innerText = "3. Open this popup to see your saved clips";
-      let or = document.createElement("p");
-      or.className = "qp-empty__hint qp-empty__hint--muted";
-      or.innerText = "Or tap the + button above to type a clip directly.";
-      empty.appendChild(title);
-      empty.appendChild(step1);
-      empty.appendChild(step2);
-      empty.appendChild(step3);
-      empty.appendChild(or);
-    }
-    paragraphBox.appendChild(empty);
-    applySearchFilter();
-    return;
-  }
+  let timestamp = document.createElement("span");
+  timestamp.className = "clip-meta__time";
+  timestamp.innerText = QPFormat.formatRelative(clip.savedAt);
+  meta.appendChild(timestamp);
 
-  for (let clip of ordered) {
-    let newContainer = document.createElement("div");
-    newContainer.dataset.clipId = clip.id;
-    newContainer.dataset.url = clip.url || "";
-    let clipBodyText = clip.kind === "image" ? (clip.src || "") : (clip.text || []).join(" ");
-    let clipTagsText = Array.isArray(clip.tags) ? clip.tags.join(" ") : "";
-    newContainer.dataset.searchHaystack = (clipBodyText + " " + clipTagsText).toLowerCase();
-    newContainer.className = "paragraph-container" + (clip.pinned ? " paragraph-container--pinned" : "");
+  let kebab = document.createElement("button");
+  kebab.type = "button";
+  kebab.className = "icon-button icon-button--mini clip-kebab";
+  kebab.title = "Actions";
+  kebab.setAttribute("aria-label", "Actions");
+  kebab.setAttribute("aria-expanded", "false");
+  kebab.innerHTML = KEBAB_SVG;
+  meta.appendChild(kebab);
 
-    //?############# CLIP META HEADER ###########################
-    let meta = document.createElement("div");
-    meta.className = "clip-meta";
+  newContainer.appendChild(meta);
 
-    let timestamp = document.createElement("span");
-    timestamp.className = "clip-meta__time";
-    timestamp.innerText = QPFormat.formatRelative(clip.savedAt);
-    meta.appendChild(timestamp);
-
-    let kebab = document.createElement("button");
-    kebab.type = "button";
-    kebab.className = "icon-button icon-button--mini clip-kebab";
-    kebab.title = "Actions";
-    kebab.setAttribute("aria-label", "Actions");
-    kebab.setAttribute("aria-expanded", "false");
-    kebab.innerHTML = KEBAB_SVG;
-    meta.appendChild(kebab);
-
-    newContainer.appendChild(meta);
-
-    //?############# BODY (text or image) ###########################
-    if (clip.kind === "image") {
-      let img = document.createElement("img");
-      img.className = "clip-image";
-      img.src = clip.src || "";
-      img.alt = "Saved image";
-      img.loading = "lazy";
-      newContainer.appendChild(img);
-    } else {
-      let paragraphs = clip.text || [];
-      let remaining = previewLength;
-      let truncated = false;
-      for (let j = 0; j < paragraphs.length; j++) {
-        let para = paragraphs[j];
-        if (remaining <= 0) { truncated = true; break; }
-        let newParagraph = document.createElement("p");
-        newParagraph.className = "paragraph-text";
-        if (para.length <= remaining) {
-          newParagraph.dataset.originalText = para;
-          newParagraph.appendChild(document.createTextNode(para));
-          newContainer.appendChild(newParagraph);
-          remaining -= para.length;
-        } else {
-          // Truncate at the last whitespace boundary so we don't slice mid-word;
-          // if there's no whitespace to break on, accept the hard cut.
-          let snippet = para.slice(0, remaining);
-          let wsCut = snippet.search(/\s+\S*$/);
-          if (wsCut > Math.floor(remaining * 0.5)) snippet = snippet.slice(0, wsCut);
-          snippet = snippet.replace(/\s+$/, "") + "…";
-          newParagraph.dataset.originalText = snippet;
-          newParagraph.appendChild(document.createTextNode(snippet));
-          newContainer.appendChild(newParagraph);
-          truncated = true;
-          break;
-        }
-      }
-      if (truncated) {
-        let linkForMore = document.createElement("a");
-        linkForMore.href = "./options.html#" + encodeURIComponent(clip.id);
-        linkForMore.target = "_blank";
-        linkForMore.innerText = "View more...";
-        newContainer.appendChild(linkForMore);
-        newContainer.appendChild(document.createElement("br"));
+  //?############# BODY (text or image) ###########################
+  if (clip.kind === "image") {
+    let img = document.createElement("img");
+    img.className = "clip-image";
+    img.src = clip.src || "";
+    img.alt = "Saved image";
+    img.loading = "lazy";
+    newContainer.appendChild(img);
+  } else {
+    let paragraphs = clip.text || [];
+    let remaining = previewLength;
+    let truncated = false;
+    for (let j = 0; j < paragraphs.length; j++) {
+      let para = paragraphs[j];
+      if (remaining <= 0) { truncated = true; break; }
+      let newParagraph = document.createElement("p");
+      newParagraph.className = "paragraph-text";
+      if (para.length <= remaining) {
+        newParagraph.dataset.originalText = para;
+        newParagraph.appendChild(document.createTextNode(para));
+        newContainer.appendChild(newParagraph);
+        remaining -= para.length;
+      } else {
+        // Truncate at the last whitespace boundary so we don't slice mid-word;
+        // if there's no whitespace to break on, accept the hard cut.
+        let snippet = para.slice(0, remaining);
+        let wsCut = snippet.search(/\s+\S*$/);
+        if (wsCut > Math.floor(remaining * 0.5)) snippet = snippet.slice(0, wsCut);
+        snippet = snippet.replace(/\s+$/, "") + "…";
+        newParagraph.dataset.originalText = snippet;
+        newParagraph.appendChild(document.createTextNode(snippet));
+        newContainer.appendChild(newParagraph);
+        truncated = true;
+        break;
       }
     }
-
-    //?############# TAG PILLS ###########################
-    if (Array.isArray(clip.tags) && clip.tags.length > 0) {
-      let tagRow = document.createElement("div");
-      tagRow.className = "clip-tags";
-      clip.tags.forEach(function (tag) {
-        let pill = document.createElement("span");
-        pill.className = "clip-tag";
-        pill.innerText = tag;
-        tagRow.appendChild(pill);
-      });
-      newContainer.appendChild(tagRow);
+    if (truncated) {
+      let linkForMore = document.createElement("a");
+      linkForMore.href = "./options.html#" + encodeURIComponent(clip.id);
+      linkForMore.target = "_blank";
+      linkForMore.innerText = "View more...";
+      newContainer.appendChild(linkForMore);
+      newContainer.appendChild(document.createElement("br"));
     }
+  }
 
-    paragraphBox.appendChild(newContainer);
-
-    let actionRow = document.createElement("div");
-    actionRow.className = "clip-actions";
-    newContainer.appendChild(actionRow);
-
-    kebab.addEventListener("click", function (e) {
-      e.stopPropagation();
-      let willOpen = !actionRow.classList.contains("is-open");
-      // Close any other open action rows so only one is expanded at a time.
-      document.querySelectorAll("#paragraph-box .clip-actions.is-open").forEach(function (row) {
-        if (row !== actionRow) {
-          row.classList.remove("is-open");
-          let otherKebab = row.parentElement && row.parentElement.querySelector(".clip-kebab");
-          if (otherKebab) otherKebab.setAttribute("aria-expanded", "false");
-        }
-      });
-      actionRow.classList.toggle("is-open", willOpen);
-      kebab.setAttribute("aria-expanded", willOpen ? "true" : "false");
+  //?############# TAG PILLS ###########################
+  if (Array.isArray(clip.tags) && clip.tags.length > 0) {
+    let tagRow = document.createElement("div");
+    tagRow.className = "clip-tags";
+    clip.tags.forEach(function (tag) {
+      let pill = document.createElement("span");
+      pill.className = "clip-tag";
+      pill.innerText = tag;
+      tagRow.appendChild(pill);
     });
+    newContainer.appendChild(tagRow);
+  }
 
-    //?############# PIN ###########################
-    let pinButton = document.createElement("button");
-    pinButton.className = "icon-button" + (clip.pinned ? " icon-button--pinned" : "");
-    pinButton.title = clip.pinned ? "Unpin" : "Pin";
-    pinButton.setAttribute("aria-label", pinButton.title);
-    pinButton.innerHTML = clip.pinned ? PIN_SVG_FILLED : PIN_SVG_OUTLINE;
-    pinButton.addEventListener("click", function () {
-      QPStorage.updateClip(clip.id, { pinned: !clip.pinned }).then(function () {
+  let actionRow = document.createElement("div");
+  actionRow.className = "clip-actions";
+  newContainer.appendChild(actionRow);
+
+  kebab.addEventListener("click", function (e) {
+    e.stopPropagation();
+    let willOpen = !actionRow.classList.contains("is-open");
+    // Close any other open action rows so only one is expanded at a time.
+    document.querySelectorAll("#paragraph-box .clip-actions.is-open").forEach(function (row) {
+      if (row !== actionRow) {
+        row.classList.remove("is-open");
+        let otherKebab = row.parentElement && row.parentElement.querySelector(".clip-kebab");
+        if (otherKebab) otherKebab.setAttribute("aria-expanded", "false");
+      }
+    });
+    actionRow.classList.toggle("is-open", willOpen);
+    kebab.setAttribute("aria-expanded", willOpen ? "true" : "false");
+  });
+
+  //?############# PIN ###########################
+  let pinButton = document.createElement("button");
+  pinButton.className = "icon-button" + (clip.pinned ? " icon-button--pinned" : "");
+  pinButton.title = clip.pinned ? "Unpin" : "Pin";
+  pinButton.setAttribute("aria-label", pinButton.title);
+  pinButton.innerHTML = clip.pinned ? PIN_SVG_FILLED : PIN_SVG_OUTLINE;
+  pinButton.addEventListener("click", function () {
+    QPStorage.updateClip(clip.id, { pinned: !clip.pinned }).then(function () {
+      QPStorage.getClips().then(renderPopup);
+    });
+  });
+  actionRow.appendChild(pinButton);
+
+  //?############# ADD LABEL (lazy menu) ###########################
+  let labelPicker = document.createElement("details");
+  labelPicker.className = "add-label";
+  let labelSummary = document.createElement("summary");
+  labelSummary.className = "icon-button add-label__summary";
+  labelSummary.title = "Add label";
+  labelSummary.setAttribute("aria-label", "Add label");
+  labelSummary.innerHTML = LABEL_PLUS_SVG;
+  labelPicker.appendChild(labelSummary);
+  let labelMenu = document.createElement("div");
+  labelMenu.className = "add-label__menu";
+  labelPicker.appendChild(labelMenu);
+
+  function renderLabelMenu() {
+    labelMenu.innerHTML = "";
+    let heading = document.createElement("div");
+    heading.className = "add-label__heading";
+    heading.innerText = "Labels";
+    labelMenu.appendChild(heading);
+
+    let applied = Array.isArray(clip.tags) ? clip.tags.slice() : [];
+    let labelSet = new Set(renderState.allLabels);
+    applied.forEach(function (t) { labelSet.add(t); });
+    let ordered = Array.from(labelSet).sort(function (a, b) { return a.localeCompare(b); });
+
+    if (ordered.length === 0) {
+      let none = document.createElement("div");
+      none.className = "add-label__empty";
+      none.innerText = "No labels yet — create one below.";
+      labelMenu.appendChild(none);
+    } else {
+      ordered.forEach(function (tag) {
+        let opt = document.createElement("button");
+        opt.type = "button";
+        opt.className = "add-label__option" + (applied.indexOf(tag) !== -1 ? " add-label__option--applied" : "");
+        let span = document.createElement("span");
+        span.innerText = tag;
+        opt.appendChild(span);
+        opt.addEventListener("click", function (e) {
+          e.stopPropagation();
+          let cur = Array.isArray(clip.tags) ? clip.tags.slice() : [];
+          let idx = cur.indexOf(tag);
+          if (idx === -1) cur.push(tag);
+          else cur.splice(idx, 1);
+          QPStorage.updateClip(clip.id, { tags: cur }).then(function () {
+            QPStorage.getClips().then(renderPopup);
+          });
+        });
+        labelMenu.appendChild(opt);
+      });
+    }
+
+    let creator = document.createElement("div");
+    creator.className = "add-label__new";
+    let input = document.createElement("input");
+    input.type = "text";
+    input.className = "add-label__input";
+    input.placeholder = "New label";
+    input.maxLength = 40;
+    let commit = document.createElement("button");
+    commit.type = "button";
+    commit.className = "add-label__commit";
+    commit.innerText = "Add";
+    function commitNewLabel() {
+      let val = (input.value || "").trim();
+      if (!val) return;
+      let cur = Array.isArray(clip.tags) ? clip.tags.slice() : [];
+      if (cur.indexOf(val) === -1) cur.push(val);
+      QPStorage.updateClip(clip.id, { tags: cur }).then(function () {
         QPStorage.getClips().then(renderPopup);
       });
-    });
-    actionRow.appendChild(pinButton);
-
-    //?############# ADD LABEL ###########################
-    let labelPicker = document.createElement("details");
-    labelPicker.className = "add-label";
-    let labelSummary = document.createElement("summary");
-    labelSummary.className = "icon-button add-label__summary";
-    labelSummary.title = "Add label";
-    labelSummary.setAttribute("aria-label", "Add label");
-    labelSummary.innerHTML = LABEL_PLUS_SVG;
-    labelPicker.appendChild(labelSummary);
-    let labelMenu = document.createElement("div");
-    labelMenu.className = "add-label__menu";
-    function renderLabelMenu() {
-      labelMenu.innerHTML = "";
-      let heading = document.createElement("div");
-      heading.className = "add-label__heading";
-      heading.innerText = "Labels";
-      labelMenu.appendChild(heading);
-
-      let applied = Array.isArray(clip.tags) ? clip.tags.slice() : [];
-      let labelSet = new Set(allLabels);
-      applied.forEach(function (t) { labelSet.add(t); });
-      let ordered = Array.from(labelSet).sort(function (a, b) { return a.localeCompare(b); });
-
-      if (ordered.length === 0) {
-        let none = document.createElement("div");
-        none.className = "add-label__empty";
-        none.innerText = "No labels yet — create one below.";
-        labelMenu.appendChild(none);
-      } else {
-        ordered.forEach(function (tag) {
-          let opt = document.createElement("button");
-          opt.type = "button";
-          opt.className = "add-label__option" + (applied.indexOf(tag) !== -1 ? " add-label__option--applied" : "");
-          let span = document.createElement("span");
-          span.innerText = tag;
-          opt.appendChild(span);
-          opt.addEventListener("click", function (e) {
-            e.stopPropagation();
-            let cur = Array.isArray(clip.tags) ? clip.tags.slice() : [];
-            let idx = cur.indexOf(tag);
-            if (idx === -1) cur.push(tag);
-            else cur.splice(idx, 1);
-            QPStorage.updateClip(clip.id, { tags: cur }).then(function () {
-              QPStorage.getClips().then(renderPopup);
-            });
-          });
-          labelMenu.appendChild(opt);
-        });
-      }
-
-      let creator = document.createElement("div");
-      creator.className = "add-label__new";
-      let input = document.createElement("input");
-      input.type = "text";
-      input.className = "add-label__input";
-      input.placeholder = "New label";
-      input.maxLength = 40;
-      let commit = document.createElement("button");
-      commit.type = "button";
-      commit.className = "add-label__commit";
-      commit.innerText = "Add";
-      function commitNewLabel() {
-        let val = (input.value || "").trim();
-        if (!val) return;
-        let cur = Array.isArray(clip.tags) ? clip.tags.slice() : [];
-        if (cur.indexOf(val) === -1) cur.push(val);
-        QPStorage.updateClip(clip.id, { tags: cur }).then(function () {
-          QPStorage.getClips().then(renderPopup);
-        });
-      }
-      commit.addEventListener("click", function (e) {
-        e.stopPropagation();
-        commitNewLabel();
-      });
-      input.addEventListener("keydown", function (e) {
-        if (e.key === "Enter") { e.preventDefault(); commitNewLabel(); }
-        else if (e.key === "Escape") { e.preventDefault(); labelPicker.removeAttribute("open"); }
-      });
-      input.addEventListener("click", function (e) { e.stopPropagation(); });
-      creator.appendChild(input);
-      creator.appendChild(commit);
-      labelMenu.appendChild(creator);
     }
-    renderLabelMenu();
-    labelPicker.appendChild(labelMenu);
-    labelPicker.addEventListener("toggle", function () {
-      if (labelPicker.open) {
-        let input = labelMenu.querySelector(".add-label__input");
-        if (input) setTimeout(function () { input.focus(); }, 20);
-      }
+    commit.addEventListener("click", function (e) {
+      e.stopPropagation();
+      commitNewLabel();
     });
-    actionRow.appendChild(labelPicker);
-
-    //?############# EDIT ###########################
-    if (clip.kind !== "image") {
-      let editButton = document.createElement("button");
-      editButton.className = "icon-button";
-      editButton.title = "Edit";
-      editButton.setAttribute("aria-label", "Edit");
-      editButton.innerHTML = EDIT_SVG;
-      editButton.addEventListener("click", function () {
-        enterPopupEditMode(clip, newContainer);
-      });
-      actionRow.appendChild(editButton);
+    input.addEventListener("keydown", function (e) {
+      if (e.key === "Enter") { e.preventDefault(); commitNewLabel(); }
+      else if (e.key === "Escape") { e.preventDefault(); labelPicker.removeAttribute("open"); }
+    });
+    input.addEventListener("click", function (e) { e.stopPropagation(); });
+    creator.appendChild(input);
+    creator.appendChild(commit);
+    labelMenu.appendChild(creator);
+  }
+  labelPicker.addEventListener("toggle", function () {
+    if (!labelPicker.open) return;
+    if (labelMenu.dataset.built !== "true") {
+      renderLabelMenu();
+      labelMenu.dataset.built = "true";
     }
+    let input = labelMenu.querySelector(".add-label__input");
+    if (input) setTimeout(function () { input.focus(); }, 20);
+  });
+  actionRow.appendChild(labelPicker);
 
-    //?############# COPY (plain text) ###########################
-    let copyButton = document.createElement("button");
-    copyButton.className = "icon-button";
-    copyButton.title = "Copy text";
-    copyButton.setAttribute("aria-label", "Copy text");
-    copyButton.innerHTML = COPY_SVG;
-    copyButton.addEventListener("click", function () {
-      let txt = clip.kind === "image" ? (clip.src || "") : (clip.text || []).join("\n\n");
-      navigator.clipboard.writeText(txt).then(
-        function () { flashButton(copyButton, "Copied"); },
-        function () { flashButton(copyButton, "Copy failed"); }
-      );
+  //?############# EDIT ###########################
+  if (clip.kind !== "image") {
+    let editButton = document.createElement("button");
+    editButton.className = "icon-button";
+    editButton.title = "Edit";
+    editButton.setAttribute("aria-label", "Edit");
+    editButton.innerHTML = EDIT_SVG;
+    editButton.addEventListener("click", function () {
+      enterPopupEditMode(clip, newContainer);
     });
-    actionRow.appendChild(copyButton);
+    actionRow.appendChild(editButton);
+  }
 
-    //?############# COPY WITH SOURCE URL ###########################
-    let copyWithUrlButton = document.createElement("button");
-    copyWithUrlButton.className = "icon-button";
-    copyWithUrlButton.title = "Copy with source URL";
-    copyWithUrlButton.setAttribute("aria-label", "Copy with source URL");
-    copyWithUrlButton.innerHTML = COPY_WITH_URL_SVG;
-    copyWithUrlButton.addEventListener("click", function () {
-      if (!clip.url) {
-        flashButton(copyWithUrlButton, "No source URL");
-        return;
-      }
-      let payload = QPFormat.formatForCopy(clip, "text-url");
-      navigator.clipboard.writeText(payload).then(
-        function () { flashButton(copyWithUrlButton, "Copied with URL"); },
-        function () { flashButton(copyWithUrlButton, "Copy failed"); }
-      );
-    });
-    actionRow.appendChild(copyWithUrlButton);
+  //?############# COPY (plain text) ###########################
+  let copyButton = document.createElement("button");
+  copyButton.className = "icon-button";
+  copyButton.title = "Copy text";
+  copyButton.setAttribute("aria-label", "Copy text");
+  copyButton.innerHTML = COPY_SVG;
+  copyButton.addEventListener("click", function () {
+    let txt = clip.kind === "image" ? (clip.src || "") : (clip.text || []).join("\n\n");
+    navigator.clipboard.writeText(txt).then(
+      function () { flashButton(copyButton, "Copied"); },
+      function () { flashButton(copyButton, "Copy failed"); }
+    );
+  });
+  actionRow.appendChild(copyButton);
 
-    //?############# SOURCE URL ###########################
-    // Hand-written clips (Quick Save) have no url — skip the button entirely.
-    if (clip.url && clip.url.startsWith("http")) {
-      let sourceButton = document.createElement("button");
-      sourceButton.className = "icon-button";
-      sourceButton.dataset.role = "view-url";
-      sourceButton.title = "View URL";
-      sourceButton.setAttribute("aria-label", "View URL");
-      sourceButton.innerHTML = SOURCE_SVG;
-      sourceButton.addEventListener("click", function () {
-        window.open(clip.url, "_blank");
-      });
-      actionRow.appendChild(sourceButton);
+  //?############# COPY WITH SOURCE URL ###########################
+  let copyWithUrlButton = document.createElement("button");
+  copyWithUrlButton.className = "icon-button";
+  copyWithUrlButton.title = "Copy with source URL";
+  copyWithUrlButton.setAttribute("aria-label", "Copy with source URL");
+  copyWithUrlButton.innerHTML = COPY_WITH_URL_SVG;
+  copyWithUrlButton.addEventListener("click", function () {
+    if (!clip.url) {
+      flashButton(copyWithUrlButton, "No source URL");
+      return;
     }
+    let payload = QPFormat.formatForCopy(clip, "text-url");
+    navigator.clipboard.writeText(payload).then(
+      function () { flashButton(copyWithUrlButton, "Copied with URL"); },
+      function () { flashButton(copyWithUrlButton, "Copy failed"); }
+    );
+  });
+  actionRow.appendChild(copyWithUrlButton);
 
-    //?############# SEND TO ###########################
-    let sendTo = document.createElement("details");
-    sendTo.className = "send-to";
-    let sendSummary = document.createElement("summary");
-    sendSummary.className = "icon-button send-to__summary";
-    sendSummary.title = "Send to...";
-    sendSummary.setAttribute("aria-label", "Send to");
-    sendSummary.innerHTML = SEND_SVG;
-    sendTo.appendChild(sendSummary);
-    let sendMenu = document.createElement("div");
-    sendMenu.className = "send-to__menu";
+  //?############# SOURCE URL ###########################
+  // Hand-written clips (Quick Save) have no url — skip the button entirely.
+  if (clip.url && clip.url.startsWith("http")) {
+    let sourceButton = document.createElement("button");
+    sourceButton.className = "icon-button";
+    sourceButton.dataset.role = "view-url";
+    sourceButton.title = "View URL";
+    sourceButton.setAttribute("aria-label", "View URL");
+    sourceButton.innerHTML = SOURCE_SVG;
+    sourceButton.addEventListener("click", function () {
+      window.open(clip.url, "_blank");
+    });
+    actionRow.appendChild(sourceButton);
+  }
+
+  //?############# SEND TO (lazy menu) ###########################
+  let sendTo = document.createElement("details");
+  sendTo.className = "send-to";
+  let sendSummary = document.createElement("summary");
+  sendSummary.className = "icon-button send-to__summary";
+  sendSummary.title = "Send to...";
+  sendSummary.setAttribute("aria-label", "Send to");
+  sendSummary.innerHTML = SEND_SVG;
+  sendTo.appendChild(sendSummary);
+  let sendMenu = document.createElement("div");
+  sendMenu.className = "send-to__menu";
+  sendTo.appendChild(sendMenu);
+
+  function buildSendMenu() {
     function addSendOption(label, action) {
       let btn = document.createElement("button");
       btn.type = "button";
@@ -545,68 +515,203 @@ function renderPopup(clips) {
         function () { flashButton(sendSummary, "Copy failed"); }
       );
     });
-    sendTo.appendChild(sendMenu);
-    actionRow.appendChild(sendTo);
+  }
+  sendTo.addEventListener("toggle", function () {
+    if (sendTo.open && sendMenu.dataset.built !== "true") {
+      buildSendMenu();
+      sendMenu.dataset.built = "true";
+    }
+  });
+  actionRow.appendChild(sendTo);
 
-    //?############# DELETE ###########################
-    let deleteButton = document.createElement("button");
-    deleteButton.className = "icon-button icon-button--danger";
-    deleteButton.title = "Delete clip";
-    deleteButton.setAttribute("aria-label", "Delete clip");
-    deleteButton.innerHTML = DELETE_SVG;
-    deleteButton.addEventListener("click", function () {
-      let runDelete = function () {
-        QPStorage.deleteClips([clip.id]).then(function (snapshot) {
-          QPStorage.getClips().then(function (after) {
-            renderPopup(after);
-            QPToast.show("Clip deleted", function () {
-              QPStorage.restoreClips(snapshot).then(function (restored) {
-                renderPopup(restored);
-              });
+  //?############# DELETE ###########################
+  let deleteButton = document.createElement("button");
+  deleteButton.className = "icon-button icon-button--danger";
+  deleteButton.title = "Delete clip";
+  deleteButton.setAttribute("aria-label", "Delete clip");
+  deleteButton.innerHTML = DELETE_SVG;
+  deleteButton.addEventListener("click", function () {
+    let runDelete = function () {
+      QPStorage.deleteClips([clip.id]).then(function (snapshot) {
+        QPStorage.getClips().then(function (after) {
+          renderPopup(after);
+          QPToast.show("Clip deleted", function () {
+            QPStorage.restoreClips(snapshot).then(function (restored) {
+              renderPopup(restored);
             });
           });
         });
-      };
-      if (confirmDelete) {
-        QPConfirm.show("Delete this clip?", runDelete);
-      } else {
-        runDelete();
-      }
-    });
-    actionRow.appendChild(deleteButton);
+      });
+    };
+    if (confirmDelete) {
+      QPConfirm.show("Delete this clip?", runDelete);
+    } else {
+      runDelete();
+    }
+  });
+  actionRow.appendChild(deleteButton);
 
-    let horizontalLine = document.createElement("hr");
-    horizontalLine.className = "horizontal-line";
-    newContainer.appendChild(horizontalLine);
+  let horizontalLine = document.createElement("hr");
+  horizontalLine.className = "horizontal-line";
+  newContainer.appendChild(horizontalLine);
+
+  return newContainer;
+}
+
+function computeVisibleClips(clips) {
+  let sortMode = (appliedSettings && appliedSettings.sortMode) || "manual";
+  let ordered = QPStorage.sortForDisplay(clips, sortMode).filter(clipPassesFilter);
+  let q = currentQuery.toLowerCase();
+  if (!q) return ordered;
+  let scope = (appliedSettings && appliedSettings.searchScope) || "both";
+  return ordered.filter(function (c) { return clipMatchesQuery(c, q, scope); });
+}
+
+function teardownObserver() {
+  if (renderState.sentinel) {
+    if (renderState.observer) renderState.observer.unobserve(renderState.sentinel);
+    renderState.sentinel.remove();
+    renderState.sentinel = null;
+  }
+}
+
+function placeSentinel() {
+  let paragraphBox = document.querySelector("#paragraph-box");
+  if (renderState.sentinel) {
+    renderState.observer.unobserve(renderState.sentinel);
+    renderState.sentinel.remove();
+  }
+  let sentinel = document.createElement("div");
+  sentinel.className = "qp-load-sentinel";
+  sentinel.setAttribute("aria-hidden", "true");
+  sentinel.style.height = "1px";
+  paragraphBox.appendChild(sentinel);
+  renderState.sentinel = sentinel;
+  renderState.observer.observe(sentinel);
+}
+
+function ensureObserver() {
+  if (renderState.observer) return;
+  renderState.observer = new IntersectionObserver(function (entries) {
+    for (let entry of entries) {
+      if (entry.isIntersecting) {
+        appendNextBatch();
+        break;
+      }
+    }
+  }, { rootMargin: "400px 0px" });
+}
+
+function appendNextBatch() {
+  let paragraphBox = document.querySelector("#paragraph-box");
+  let end = Math.min(renderState.cursor + POPUP_BATCH_SIZE, renderState.visible.length);
+  if (renderState.cursor >= end) {
+    teardownObserver();
+    return;
+  }
+  let frag = document.createDocumentFragment();
+  for (let i = renderState.cursor; i < end; i++) {
+    frag.appendChild(buildPopupClipCard(renderState.visible[i]));
+  }
+  paragraphBox.appendChild(frag);
+  renderState.cursor = end;
+
+  if (currentQuery) applyHighlights();
+
+  if (renderState.cursor >= renderState.visible.length) {
+    teardownObserver();
+  } else {
+    placeSentinel();
+  }
+}
+
+function renderPopup(clips) {
+  let paragraphBox = document.querySelector("#paragraph-box");
+  let searchInput = document.getElementById("popupSearch");
+  teardownObserver();
+  paragraphBox.innerHTML = "";
+
+  renderState.clips = clips || [];
+  renderState.visible = computeVisibleClips(renderState.clips);
+  renderState.cursor = 0;
+
+  // Build the union of labels across ALL clips (not just filtered) so the
+  // Add-Label picker offers the same vocabulary regardless of the active tab.
+  let seenLabel = new Set();
+  let allLabels = [];
+  for (let c of renderState.clips) {
+    if (!Array.isArray(c.tags)) continue;
+    for (let t of c.tags) {
+      if (typeof t !== "string" || !t || seenLabel.has(t)) continue;
+      seenLabel.add(t);
+      allLabels.push(t);
+    }
+  }
+  allLabels.sort(function (a, b) { return a.localeCompare(b); });
+  renderState.allLabels = allLabels;
+
+  searchInput.style.display = searchOpen ? "" : "none";
+
+  if (renderState.visible.length === 0) {
+    let empty = document.createElement("div");
+    empty.className = "qp-empty";
+    if (currentFilter !== "all" && renderState.clips.length > 0) {
+      empty.classList.add("qp-empty--filtered");
+      let title = document.createElement("p");
+      title.className = "qp-empty__title";
+      let label = currentFilter === "pinned" ? "pinned" :
+                  currentFilter === "tagged" ? "labeled" : "linked";
+      title.innerText = "No " + label + " clips";
+      let hint = document.createElement("p");
+      hint.className = "qp-empty__hint qp-empty__hint--muted";
+      hint.innerText = "Switch to All to see everything.";
+      empty.appendChild(title);
+      empty.appendChild(hint);
+    } else if (currentQuery && renderState.clips.length > 0) {
+      let title = document.createElement("p");
+      title.className = "qp-empty__title";
+      title.innerText = "No matches";
+      let hint = document.createElement("p");
+      hint.className = "qp-empty__hint qp-empty__hint--muted";
+      hint.innerText = "Try a different search term.";
+      empty.appendChild(title);
+      empty.appendChild(hint);
+    } else {
+      let title = document.createElement("p");
+      title.className = "qp-empty__title";
+      title.innerText = "No clips yet";
+      let step1 = document.createElement("p");
+      step1.className = "qp-empty__hint";
+      step1.innerText = "1. Select text on any page";
+      let step2 = document.createElement("p");
+      step2.className = "qp-empty__hint";
+      step2.innerText = "2. Right-click and choose “Save text to QuickPaste”";
+      let step3 = document.createElement("p");
+      step3.className = "qp-empty__hint";
+      step3.innerText = "3. Open this popup to see your saved clips";
+      let or = document.createElement("p");
+      or.className = "qp-empty__hint qp-empty__hint--muted";
+      or.innerText = "Or tap the + button above to type a clip directly.";
+      empty.appendChild(title);
+      empty.appendChild(step1);
+      empty.appendChild(step2);
+      empty.appendChild(step3);
+      empty.appendChild(or);
+    }
+    paragraphBox.appendChild(empty);
+    return;
   }
 
-  applySearchFilter();
+  ensureObserver();
+  appendNextBatch();
 }
 
-function applySearchFilter() {
-  let scope = (appliedSettings && appliedSettings.searchScope) || "both";
-  let q = currentQuery.toLowerCase();
-  let cards = document.querySelectorAll("#paragraph-box .paragraph-container");
-  cards.forEach(function (card) {
-    if (!q) { card.style.display = ""; return; }
-    let textPart = card.dataset.searchHaystack || "";
-    let urlPart = (card.dataset.url || "").toLowerCase();
-    let haystack;
-    if (scope === "text") haystack = textPart;
-    else if (scope === "url") haystack = urlPart;
-    else haystack = textPart + " " + urlPart;
-    card.style.display = haystack.indexOf(q) !== -1 ? "" : "none";
-  });
-  applyHighlights();
-}
-
-// Re-decorate visible cards' paragraph text with <mark> spans around query matches.
+// Re-decorate rendered paragraph text with <mark> spans around query matches.
 // Reads from p.dataset.originalText so repeated calls don't compound highlights.
 function applyHighlights() {
   let q = currentQuery;
   let cards = document.querySelectorAll("#paragraph-box .paragraph-container");
   cards.forEach(function (card) {
-    if (card.style.display === "none") return;
     let paragraphs = card.querySelectorAll(".paragraph-text");
     paragraphs.forEach(function (p) {
       let text = p.dataset.originalText != null ? p.dataset.originalText : p.textContent;
@@ -616,9 +721,15 @@ function applyHighlights() {
   });
 }
 
+// Debounce keystrokes so we don't re-filter + re-render on every character
+// when a user types into a large collection.
+let searchDebounceId = null;
 document.getElementById("popupSearch").addEventListener("input", function () {
   currentQuery = (this.value || "").trim();
-  applySearchFilter();
+  if (searchDebounceId) clearTimeout(searchDebounceId);
+  searchDebounceId = setTimeout(function () {
+    renderPopup(renderState.clips);
+  }, 80);
 });
 
 //* ============ TAG BANNER ============
@@ -679,7 +790,7 @@ function maybeShowTagBanner(settings) {
       if (input.value) {
         input.value = "";
         currentQuery = "";
-        QPStorage.getClips().then(renderPopup);
+        renderPopup(renderState.clips);
       }
     }
   });
@@ -756,10 +867,18 @@ function maybeShowTagBanner(settings) {
         t.classList.toggle("is-active", active);
         t.setAttribute("aria-selected", active ? "true" : "false");
       });
-      QPStorage.getClips().then(renderPopup);
+      renderPopup(renderState.clips);
     });
   });
 })();
+
+//* ============ CLOSE LABEL DROPDOWN ON OUTSIDE CLICK ============
+document.addEventListener("mousedown", function (e) {
+  let openPickers = document.querySelectorAll(".add-label[open]");
+  openPickers.forEach(function (picker) {
+    if (!picker.contains(e.target)) picker.removeAttribute("open");
+  });
+}, true);
 
 //* ============ INIT ============
 QPSettings.get().then(function (settings) {

@@ -7,6 +7,21 @@ let currentDateEnd = "";
 let currentTagFilter = "";       // tag string; empty = no tag filter
 let lastDragEndTime = 0;         // suppresses click-to-select right after a drop
 
+// Incremental render state. The collection page is unbounded, so we keep the
+// full clip list + filtered slice in memory and append cards in batches as
+// the user scrolls. This keeps initial paint fast no matter how many clips
+// are stored.
+const COLLECTION_BATCH_SIZE = 100;
+let renderState = {
+  clips: [],
+  visible: [],
+  selectedIds: new Set(),
+  cursor: 0,
+  observer: null,
+  sentinel: null,
+  pendingScrollHash: "",
+};
+
 // Serialize selectedCheckboxes read-modify-write so rapid checkbox toggles
 // don't clobber each other (chrome.storage callbacks can interleave).
 let selectionQueue = Promise.resolve();
@@ -136,32 +151,36 @@ function passesFilters(clip) {
   return true;
 }
 
-// DOM-side substring filter. Runs on every keystroke without re-rendering, so the
-// list updates smoothly. Cards carry a pre-computed dataset.searchHaystack from render.
-function applyCollectionSearchFilter() {
-  let scope = (appliedSettings && appliedSettings.searchScope) || "both";
-  let q = currentQuery.toLowerCase();
-  let cards = document.querySelectorAll("#collection-container .paragraph-container");
-  cards.forEach(function (card) {
-    if (!q) { card.style.display = ""; return; }
-    let textPart = card.dataset.searchHaystack || "";
-    let urlPart = (card.dataset.url || "").toLowerCase();
-    let haystack;
-    if (scope === "text") haystack = textPart;
-    else if (scope === "url") haystack = urlPart;
-    else haystack = textPart + " " + urlPart;
-    card.style.display = haystack.indexOf(q) !== -1 ? "" : "none";
-  });
-  applyCollectionHighlights();
+function clipMatchesQuery(clip, q, scope) {
+  if (!q) return true;
+  let textPart = clip.kind === "image"
+    ? (clip.src || "")
+    : (clip.text || []).join(" ");
+  let tagsPart = Array.isArray(clip.tags) ? clip.tags.join(" ") : "";
+  let bodyHaystack = (textPart + " " + tagsPart).toLowerCase();
+  let urlHaystack = (clip.url || "").toLowerCase();
+  let haystack;
+  if (scope === "text") haystack = bodyHaystack;
+  else if (scope === "url") haystack = urlHaystack;
+  else haystack = bodyHaystack + " " + urlHaystack;
+  return haystack.indexOf(q) !== -1;
 }
 
-// Re-decorate visible cards' paragraph text with <mark> spans around query matches.
+function computeVisibleClips(clips) {
+  let sortMode = (appliedSettings && appliedSettings.sortMode) || "manual";
+  let ordered = QPStorage.sortForDisplay(clips, sortMode).filter(passesFilters);
+  let q = currentQuery.toLowerCase();
+  if (!q) return ordered;
+  let scope = (appliedSettings && appliedSettings.searchScope) || "both";
+  return ordered.filter(function (c) { return clipMatchesQuery(c, q, scope); });
+}
+
+// Re-decorate rendered paragraph text with <mark> spans around query matches.
 // Reads from p.dataset.originalText so repeated calls don't compound highlights.
 function applyCollectionHighlights() {
   let q = currentQuery;
   let cards = document.querySelectorAll("#collection-container .paragraph-container");
   cards.forEach(function (card) {
-    if (card.style.display === "none") return;
     if (card.classList.contains("is-editing")) return;
     let paragraphs = card.querySelectorAll(".paragraph-text");
     paragraphs.forEach(function (p) {
@@ -231,6 +250,33 @@ panelToggles.forEach(function (btn) {
     setPanelView(activeView === view ? null : view);
   });
 });
+
+// Parses location.hash into the three URL contracts this page understands:
+//   #<clipId>       — scroll the Collection to a specific clip
+//   #panel=<name>   — open a side panel (e.g. popup cog → settings)
+//   #collection-container — legacy popup link, ignored
+function parseHashDirective(rawHash) {
+  let hash = (rawHash || "").replace(/^#/, "");
+  try { hash = decodeURIComponent(hash); } catch (e) {}
+  if (!hash || hash === "collection-container") return { kind: "none" };
+  if (hash.indexOf("panel=") === 0) {
+    return { kind: "panel", name: hash.slice("panel=".length) };
+  }
+  return { kind: "clip", id: hash };
+}
+
+// Honor a panel directive in the URL (e.g. popup cog opens with #panel=settings).
+(function openPanelFromHash() {
+  let dir = parseHashDirective(location.hash);
+  if (dir.kind !== "panel") return;
+  let toggle = document.querySelector(
+    '.activity-bar__item[data-view="' + dir.name + '"]'
+  );
+  if (toggle) {
+    lastFocusedToggle = toggle;
+    setPanelView(dir.name);
+  }
+})();
 
 sidePanelClose.addEventListener("click", function () {
   setPanelView(null);
@@ -329,11 +375,350 @@ function flashButton(btn, label) {
   }, 1200);
 }
 
+// Build a single clip card. Heavy submenus (send-to) are constructed lazily
+// on first open so a 10k-clip render doesn't pre-build 10k dropdowns the
+// user will never touch.
+function buildCollectionClipCard(clip) {
+  let newContainer = document.createElement("div");
+  newContainer.dataset.clipId = clip.id;
+  newContainer.className = "paragraph-container" + (clip.pinned ? " paragraph-container--pinned" : "");
+  newContainer.dataset.url = clip.url || "";
+  let clipBodyText = clip.kind === "image" ? (clip.src || "") : (clip.text || []).join(" ");
+  let clipTagsText = Array.isArray(clip.tags) ? clip.tags.join(" ") : "";
+  newContainer.dataset.searchHaystack = (clipBodyText + " " + clipTagsText).toLowerCase();
+  if (!clip.pinned) {
+    newContainer.draggable = true;
+    newContainer.classList.add("is-draggable");
+  }
+
+  let headerRow = document.createElement("div");
+  headerRow.className = "paragraph-header";
+
+  let newCheckbox = document.createElement("input");
+  newCheckbox.type = "checkbox";
+  newCheckbox.id = "checkbox-" + clip.id;
+  newCheckbox.name = "checkbox";
+  newCheckbox.dataset.clipId = clip.id;
+  newCheckbox.checked = renderState.selectedIds.has(clip.id);
+  newCheckbox.setAttribute("aria-label", "Select clip");
+  newCheckbox.title = "Select";
+  if (newCheckbox.checked) newContainer.classList.add("is-selected");
+
+  function persistSelectionState() {
+    let nowChecked = newCheckbox.checked;
+    if (nowChecked) {
+      newContainer.classList.add("is-selected");
+      renderState.selectedIds.add(clip.id);
+    } else {
+      newContainer.classList.remove("is-selected");
+      renderState.selectedIds.delete(clip.id);
+    }
+    mutateSelection(function (list) {
+      if (nowChecked) {
+        if (list.indexOf(clip.id) === -1) list.push(clip.id);
+      } else {
+        let idx = list.indexOf(clip.id);
+        if (idx > -1) list.splice(idx, 1);
+      }
+      return list;
+    });
+  }
+  newCheckbox.addEventListener("click", function (e) {
+    e.stopPropagation();
+    persistSelectionState();
+  });
+  headerRow.appendChild(newCheckbox);
+
+  // Click anywhere on the card (except text body, buttons, or links) toggles selection.
+  // Click-and-hold + move still initiates native drag (no click fires after a drag).
+  newContainer.addEventListener("click", function (e) {
+    if (Date.now() - lastDragEndTime < 200) return;
+    if (newContainer.classList.contains("is-editing")) return;
+    if (e.target.closest("button, input, label, summary, a, textarea, .clip-tag")) return;
+    if (e.target.closest(".paragraph-text")) return;
+    newCheckbox.checked = !newCheckbox.checked;
+    persistSelectionState();
+  });
+
+  let timeLabel = document.createElement("span");
+  timeLabel.className = "clip-meta__time";
+  timeLabel.innerText = QPFormat.formatRelative(clip.savedAt);
+  headerRow.appendChild(timeLabel);
+
+  // Pin
+  let pinButton = document.createElement("button");
+  pinButton.className = "icon-button" + (clip.pinned ? " icon-button--pinned" : "");
+  pinButton.title = clip.pinned ? "Unpin" : "Pin";
+  pinButton.setAttribute("aria-label", pinButton.title);
+  pinButton.innerHTML = clip.pinned ? SVG_PIN_FILLED : SVG_PIN_OUTLINE;
+  pinButton.addEventListener("click", function () {
+    QPStorage.updateClip(clip.id, { pinned: !clip.pinned }).then(function () {
+      QPStorage.getClips().then(renderCollection);
+    });
+  });
+  headerRow.appendChild(pinButton);
+
+  // Labels (add / edit)
+  let labelsButton = document.createElement("button");
+  labelsButton.className = "icon-button";
+  let labelCount = Array.isArray(clip.tags) ? clip.tags.length : 0;
+  labelsButton.title = labelCount > 0 ? "Edit labels (" + labelCount + ")" : "Add label";
+  labelsButton.setAttribute("aria-label", labelsButton.title);
+  labelsButton.innerHTML = SVG_TAG;
+  if (labelCount > 0) labelsButton.classList.add("icon-button--has-labels");
+  labelsButton.addEventListener("click", function () {
+    QPStorage.getClips().then(function (all) {
+      let pool = collectAllTags(all);
+      QPLabelEditor.show(clip.tags || [], pool, function (nextTags) {
+        QPStorage.updateClip(clip.id, { tags: nextTags }).then(function () {
+          QPStorage.getClips().then(renderCollection);
+        });
+      });
+    });
+  });
+  headerRow.appendChild(labelsButton);
+
+  // Edit
+  let editButton = document.createElement("button");
+  editButton.className = "icon-button";
+  editButton.title = "Edit";
+  editButton.setAttribute("aria-label", "Edit");
+  editButton.innerHTML = SVG_EDIT;
+  editButton.addEventListener("click", function () {
+    enterEditMode(clip, newContainer);
+  });
+  headerRow.appendChild(editButton);
+
+  // Copy text
+  let copyButton = document.createElement("button");
+  copyButton.className = "icon-button";
+  copyButton.title = "Copy text";
+  copyButton.setAttribute("aria-label", "Copy text");
+  copyButton.innerHTML = SVG_COPY;
+  copyButton.addEventListener("click", function () {
+    let txt = (clip.text || []).join("\n\n");
+    navigator.clipboard.writeText(txt).then(
+      function () { flashButton(copyButton, "Copied"); },
+      function () { flashButton(copyButton, "Copy failed"); }
+    );
+  });
+  headerRow.appendChild(copyButton);
+
+  // Copy with URL
+  let copyWithUrlButton = document.createElement("button");
+  copyWithUrlButton.className = "icon-button";
+  copyWithUrlButton.title = "Copy with source URL";
+  copyWithUrlButton.setAttribute("aria-label", "Copy with source URL");
+  copyWithUrlButton.innerHTML = SVG_COPY_WITH_URL;
+  copyWithUrlButton.addEventListener("click", function () {
+    let body = (clip.text || []).join("\n\n");
+    let withUrl = clip.url ? body + "\n\n— " + clip.url : body;
+    navigator.clipboard.writeText(withUrl).then(
+      function () { flashButton(copyWithUrlButton, "Copied with URL"); },
+      function () { flashButton(copyWithUrlButton, "Copy failed"); }
+    );
+  });
+  headerRow.appendChild(copyWithUrlButton);
+
+  // Source URL
+  let sourceButton = document.createElement("button");
+  sourceButton.className = "icon-button";
+  sourceButton.dataset.role = "view-url";
+  sourceButton.title = "View URL";
+  sourceButton.setAttribute("aria-label", "View URL");
+  sourceButton.innerHTML = SVG_SOURCE;
+  sourceButton.addEventListener("click", function () {
+    let pageURL = clip.url;
+    if (pageURL && pageURL.startsWith("http")) {
+      window.open(pageURL, "_blank");
+    }
+  });
+  headerRow.appendChild(sourceButton);
+
+  // Send to ... (lazy menu)
+  let sendTo = document.createElement("details");
+  sendTo.className = "send-to";
+  let sendSummary = document.createElement("summary");
+  sendSummary.className = "icon-button send-to__summary";
+  sendSummary.title = "Send to...";
+  sendSummary.setAttribute("aria-label", "Send to");
+  sendSummary.innerHTML = SVG_SEND;
+  sendTo.appendChild(sendSummary);
+  let sendMenu = document.createElement("div");
+  sendMenu.className = "send-to__menu";
+  sendTo.appendChild(sendMenu);
+
+  function buildSendMenu() {
+    function addSendOption(label, action) {
+      let btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "send-to__item";
+      btn.innerText = label;
+      btn.addEventListener("click", function () {
+        action();
+        sendTo.removeAttribute("open");
+      });
+      sendMenu.appendChild(btn);
+    }
+    if (appliedSettings && appliedSettings.obsidianVault) {
+      addSendOption("Obsidian", function () {
+        QPSendTo.obsidian(clip, appliedSettings.obsidianVault);
+      });
+    }
+    addSendOption("Notion (copy + open)", function () {
+      QPSendTo.notion(clip).then(
+        function () { flashButton(sendSummary, "Copied — paste in Notion"); },
+        function () { flashButton(sendSummary, "Copy failed"); }
+      );
+    });
+    addSendOption("Google Docs (copy + open)", function () {
+      QPSendTo.googleDocs(clip).then(
+        function () { flashButton(sendSummary, "Copied — paste in Docs"); },
+        function () { flashButton(sendSummary, "Copy failed"); }
+      );
+    });
+  }
+  sendTo.addEventListener("toggle", function () {
+    if (sendTo.open && sendMenu.dataset.built !== "true") {
+      buildSendMenu();
+      sendMenu.dataset.built = "true";
+    }
+  });
+  headerRow.appendChild(sendTo);
+
+  // Delete (per-clip)
+  let deleteOneBtn = document.createElement("button");
+  deleteOneBtn.className = "icon-button icon-button--danger";
+  deleteOneBtn.title = "Delete clip";
+  deleteOneBtn.setAttribute("aria-label", "Delete clip");
+  deleteOneBtn.innerHTML = SVG_DELETE;
+  deleteOneBtn.addEventListener("click", function () {
+    let runDelete = function () {
+      QPStorage.deleteClips([clip.id]).then(function (snapshot) {
+        QPStorage.getClips().then(function (after) {
+          renderCollection(after);
+          QPToast.show("Clip deleted", function () {
+            QPStorage.restoreClips(snapshot).then(function (restored) {
+              renderCollection(restored);
+            });
+          });
+        });
+      });
+    };
+    if (appliedSettings && appliedSettings.confirmDelete) {
+      QPConfirm.show("Delete this clip?", runDelete);
+    } else {
+      runDelete();
+    }
+  });
+  headerRow.appendChild(deleteOneBtn);
+
+  let paragraphsWrap = document.createElement("div");
+  paragraphsWrap.className = "paragraph-body";
+  paragraphsWrap.setAttribute("draggable", "false");
+  if (clip.kind === "image") {
+    let img = document.createElement("img");
+    img.className = "clip-image";
+    img.src = clip.src || "";
+    img.alt = "Saved image";
+    img.loading = "lazy";
+    img.draggable = false;
+    paragraphsWrap.appendChild(img);
+  } else {
+    let paragraphs = clip.text || [];
+    for (let para of paragraphs) {
+      let newParagraph = document.createElement("p");
+      newParagraph.className = "paragraph-text";
+      newParagraph.dataset.originalText = para;
+      newParagraph.appendChild(document.createTextNode(para));
+      paragraphsWrap.appendChild(newParagraph);
+    }
+  }
+  newContainer.appendChild(paragraphsWrap);
+
+  if (Array.isArray(clip.tags) && clip.tags.length > 0) {
+    let tagRow = document.createElement("div");
+    tagRow.className = "clip-tags";
+    clip.tags.forEach(function (tag) {
+      let pill = document.createElement("span");
+      pill.className = "clip-tag";
+      pill.innerText = tag;
+      tagRow.appendChild(pill);
+    });
+    newContainer.appendChild(tagRow);
+  }
+
+  newContainer.insertBefore(headerRow, newContainer.firstChild);
+  return newContainer;
+}
+
+function teardownCollectionObserver() {
+  if (renderState.sentinel) {
+    if (renderState.observer) renderState.observer.unobserve(renderState.sentinel);
+    renderState.sentinel.remove();
+    renderState.sentinel = null;
+  }
+}
+
+function placeCollectionSentinel() {
+  let container = document.querySelector("#collection-container");
+  if (renderState.sentinel) {
+    renderState.observer.unobserve(renderState.sentinel);
+    renderState.sentinel.remove();
+  }
+  let sentinel = document.createElement("div");
+  sentinel.className = "qp-load-sentinel";
+  sentinel.setAttribute("aria-hidden", "true");
+  sentinel.style.height = "1px";
+  container.appendChild(sentinel);
+  renderState.sentinel = sentinel;
+  renderState.observer.observe(sentinel);
+}
+
+function ensureCollectionObserver() {
+  if (renderState.observer) return;
+  renderState.observer = new IntersectionObserver(function (entries) {
+    for (let entry of entries) {
+      if (entry.isIntersecting) {
+        appendCollectionBatch();
+        break;
+      }
+    }
+  }, { rootMargin: "600px 0px" });
+}
+
+function appendCollectionBatch() {
+  let container = document.querySelector("#collection-container");
+  let end = Math.min(renderState.cursor + COLLECTION_BATCH_SIZE, renderState.visible.length);
+  if (renderState.cursor >= end) {
+    teardownCollectionObserver();
+    return;
+  }
+  let frag = document.createDocumentFragment();
+  for (let i = renderState.cursor; i < end; i++) {
+    frag.appendChild(buildCollectionClipCard(renderState.visible[i]));
+  }
+  container.appendChild(frag);
+  renderState.cursor = end;
+
+  if (currentQuery) applyCollectionHighlights();
+
+  if (renderState.pendingScrollHash) maybeScrollToHashClip();
+
+  if (renderState.cursor >= renderState.visible.length) {
+    teardownCollectionObserver();
+  } else {
+    placeCollectionSentinel();
+  }
+}
+
 function renderCollection(clips) {
   let collectionContainer = document.querySelector("#collection-container");
+  teardownCollectionObserver();
   collectionContainer.innerHTML = "";
 
-  let hasClips = clips.length > 0;
+  renderState.clips = clips || [];
+  let hasClips = renderState.clips.length > 0;
   document.getElementById("deleteSelected").style.display = hasClips ? "block" : "none";
   document.getElementById("copySelected").style.display = hasClips ? "block" : "none";
   let selectAllButton = document.getElementById("selectAll");
@@ -361,283 +746,42 @@ function renderCollection(clips) {
     empty.appendChild(step2);
     empty.appendChild(step3);
     collectionContainer.appendChild(empty);
+    refreshTagFilterOptions(renderState.clips);
     return;
   }
 
-  let sortMode = (appliedSettings && appliedSettings.sortMode) || "manual";
-  let ordered = QPStorage.sortForDisplay(clips, sortMode).filter(passesFilters);
+  renderState.visible = computeVisibleClips(renderState.clips);
+  renderState.cursor = 0;
+  let hashDir = parseHashDirective(location.hash);
+  renderState.pendingScrollHash = hashDir.kind === "clip" ? hashDir.id : "";
 
   chrome.storage.local.get({ selectedCheckboxes: [] }, function (result) {
-    let selectedIds = new Set(
+    renderState.selectedIds = new Set(
       (result.selectedCheckboxes || []).filter(function (v) { return typeof v === "string"; })
     );
 
-    for (let clip of ordered) {
-      let newContainer = document.createElement("div");
-      newContainer.dataset.clipId = clip.id;
-      newContainer.className = "paragraph-container" + (clip.pinned ? " paragraph-container--pinned" : "");
-      newContainer.dataset.url = clip.url || "";
-      let clipBodyText = clip.kind === "image" ? (clip.src || "") : (clip.text || []).join(" ");
-      let clipTagsText = Array.isArray(clip.tags) ? clip.tags.join(" ") : "";
-      newContainer.dataset.searchHaystack = (clipBodyText + " " + clipTagsText).toLowerCase();
-      if (!clip.pinned) {
-        newContainer.draggable = true;
-        newContainer.classList.add("is-draggable");
-      }
-
-      let headerRow = document.createElement("div");
-      headerRow.className = "paragraph-header";
-
-      let newCheckbox = document.createElement("input");
-      newCheckbox.type = "checkbox";
-      newCheckbox.id = "checkbox-" + clip.id;
-      newCheckbox.name = "checkbox";
-      newCheckbox.dataset.clipId = clip.id;
-      newCheckbox.checked = selectedIds.has(clip.id);
-      newCheckbox.setAttribute("aria-label", "Select clip");
-      newCheckbox.title = "Select";
-      if (newCheckbox.checked) newContainer.classList.add("is-selected");
-
-      function persistSelectionState() {
-        let nowChecked = newCheckbox.checked;
-        if (nowChecked) newContainer.classList.add("is-selected");
-        else newContainer.classList.remove("is-selected");
-        mutateSelection(function (list) {
-          if (nowChecked) {
-            if (list.indexOf(clip.id) === -1) list.push(clip.id);
-          } else {
-            let idx = list.indexOf(clip.id);
-            if (idx > -1) list.splice(idx, 1);
-          }
-          return list;
-        });
-      }
-      newCheckbox.addEventListener("click", function (e) {
-        e.stopPropagation();
-        persistSelectionState();
-      });
-      headerRow.appendChild(newCheckbox);
-
-      // Click anywhere on the card (except text body, buttons, or links) toggles selection.
-      // Click-and-hold + move still initiates native drag (no click fires after a drag).
-      newContainer.addEventListener("click", function (e) {
-        if (Date.now() - lastDragEndTime < 200) return;
-        if (newContainer.classList.contains("is-editing")) return;
-        if (e.target.closest("button, input, label, summary, a, textarea, .clip-tag")) return;
-        if (e.target.closest(".paragraph-text")) return;
-        newCheckbox.checked = !newCheckbox.checked;
-        persistSelectionState();
-      });
-
-      let timeLabel = document.createElement("span");
-      timeLabel.className = "clip-meta__time";
-      timeLabel.innerText = QPFormat.formatRelative(clip.savedAt);
-      headerRow.appendChild(timeLabel);
-
-      // Pin
-      let pinButton = document.createElement("button");
-      pinButton.className = "icon-button" + (clip.pinned ? " icon-button--pinned" : "");
-      pinButton.title = clip.pinned ? "Unpin" : "Pin";
-      pinButton.setAttribute("aria-label", pinButton.title);
-      pinButton.innerHTML = clip.pinned ? SVG_PIN_FILLED : SVG_PIN_OUTLINE;
-      pinButton.addEventListener("click", function () {
-        QPStorage.updateClip(clip.id, { pinned: !clip.pinned }).then(function () {
-          QPStorage.getClips().then(renderCollection);
-        });
-      });
-      headerRow.appendChild(pinButton);
-
-      // Labels (add / edit)
-      let labelsButton = document.createElement("button");
-      labelsButton.className = "icon-button";
-      let labelCount = Array.isArray(clip.tags) ? clip.tags.length : 0;
-      labelsButton.title = labelCount > 0 ? "Edit labels (" + labelCount + ")" : "Add label";
-      labelsButton.setAttribute("aria-label", labelsButton.title);
-      labelsButton.innerHTML = SVG_TAG;
-      if (labelCount > 0) labelsButton.classList.add("icon-button--has-labels");
-      labelsButton.addEventListener("click", function () {
-        QPStorage.getClips().then(function (all) {
-          let pool = collectAllTags(all);
-          QPLabelEditor.show(clip.tags || [], pool, function (nextTags) {
-            QPStorage.updateClip(clip.id, { tags: nextTags }).then(function () {
-              QPStorage.getClips().then(renderCollection);
-            });
-          });
-        });
-      });
-      headerRow.appendChild(labelsButton);
-
-      // Edit
-      let editButton = document.createElement("button");
-      editButton.className = "icon-button";
-      editButton.title = "Edit";
-      editButton.setAttribute("aria-label", "Edit");
-      editButton.innerHTML = SVG_EDIT;
-      editButton.addEventListener("click", function () {
-        enterEditMode(clip, newContainer);
-      });
-      headerRow.appendChild(editButton);
-
-      // Copy text
-      let copyButton = document.createElement("button");
-      copyButton.className = "icon-button";
-      copyButton.title = "Copy text";
-      copyButton.setAttribute("aria-label", "Copy text");
-      copyButton.innerHTML = SVG_COPY;
-      copyButton.addEventListener("click", function () {
-        let txt = (clip.text || []).join("\n\n");
-        navigator.clipboard.writeText(txt).then(
-          function () { flashButton(copyButton, "Copied"); },
-          function () { flashButton(copyButton, "Copy failed"); }
-        );
-      });
-      headerRow.appendChild(copyButton);
-
-      // Copy with URL
-      let copyWithUrlButton = document.createElement("button");
-      copyWithUrlButton.className = "icon-button";
-      copyWithUrlButton.title = "Copy with source URL";
-      copyWithUrlButton.setAttribute("aria-label", "Copy with source URL");
-      copyWithUrlButton.innerHTML = SVG_COPY_WITH_URL;
-      copyWithUrlButton.addEventListener("click", function () {
-        let body = (clip.text || []).join("\n\n");
-        let withUrl = clip.url ? body + "\n\n— " + clip.url : body;
-        navigator.clipboard.writeText(withUrl).then(
-          function () { flashButton(copyWithUrlButton, "Copied with URL"); },
-          function () { flashButton(copyWithUrlButton, "Copy failed"); }
-        );
-      });
-      headerRow.appendChild(copyWithUrlButton);
-
-      // Source URL
-      let sourceButton = document.createElement("button");
-      sourceButton.className = "icon-button";
-      sourceButton.dataset.role = "view-url";
-      sourceButton.title = "View URL";
-      sourceButton.setAttribute("aria-label", "View URL");
-      sourceButton.innerHTML = SVG_SOURCE;
-      sourceButton.addEventListener("click", function () {
-        let pageURL = clip.url;
-        if (pageURL && pageURL.startsWith("http")) {
-          window.open(pageURL, "_blank");
-        }
-      });
-      headerRow.appendChild(sourceButton);
-
-      // Send to ...
-      let sendTo = document.createElement("details");
-      sendTo.className = "send-to";
-      let sendSummary = document.createElement("summary");
-      sendSummary.className = "icon-button send-to__summary";
-      sendSummary.title = "Send to...";
-      sendSummary.setAttribute("aria-label", "Send to");
-      sendSummary.innerHTML = SVG_SEND;
-      sendTo.appendChild(sendSummary);
-      let sendMenu = document.createElement("div");
-      sendMenu.className = "send-to__menu";
-      function addSendOption(label, action) {
-        let btn = document.createElement("button");
-        btn.type = "button";
-        btn.className = "send-to__item";
-        btn.innerText = label;
-        btn.addEventListener("click", function () {
-          action();
-          sendTo.removeAttribute("open");
-        });
-        sendMenu.appendChild(btn);
-      }
-      if (appliedSettings && appliedSettings.obsidianVault) {
-        addSendOption("Obsidian", function () {
-          QPSendTo.obsidian(clip, appliedSettings.obsidianVault);
-        });
-      }
-      addSendOption("Notion (copy + open)", function () {
-        QPSendTo.notion(clip).then(
-          function () { flashButton(sendSummary, "Copied — paste in Notion"); },
-          function () { flashButton(sendSummary, "Copy failed"); }
-        );
-      });
-      addSendOption("Google Docs (copy + open)", function () {
-        QPSendTo.googleDocs(clip).then(
-          function () { flashButton(sendSummary, "Copied — paste in Docs"); },
-          function () { flashButton(sendSummary, "Copy failed"); }
-        );
-      });
-      sendTo.appendChild(sendMenu);
-      headerRow.appendChild(sendTo);
-
-      // Delete (per-clip)
-      let deleteOneBtn = document.createElement("button");
-      deleteOneBtn.className = "icon-button icon-button--danger";
-      deleteOneBtn.title = "Delete clip";
-      deleteOneBtn.setAttribute("aria-label", "Delete clip");
-      deleteOneBtn.innerHTML = SVG_DELETE;
-      deleteOneBtn.addEventListener("click", function () {
-        let runDelete = function () {
-          QPStorage.deleteClips([clip.id]).then(function (snapshot) {
-            QPStorage.getClips().then(function (after) {
-              renderCollection(after);
-              QPToast.show("Clip deleted", function () {
-                QPStorage.restoreClips(snapshot).then(function (restored) {
-                  renderCollection(restored);
-                });
-              });
-            });
-          });
-        };
-        if (appliedSettings && appliedSettings.confirmDelete) {
-          QPConfirm.show("Delete this clip?", runDelete);
-        } else {
-          runDelete();
-        }
-      });
-      headerRow.appendChild(deleteOneBtn);
-
-      let paragraphsWrap = document.createElement("div");
-      paragraphsWrap.className = "paragraph-body";
-      paragraphsWrap.setAttribute("draggable", "false");
-      if (clip.kind === "image") {
-        let img = document.createElement("img");
-        img.className = "clip-image";
-        img.src = clip.src || "";
-        img.alt = "Saved image";
-        img.loading = "lazy";
-        img.draggable = false;
-        paragraphsWrap.appendChild(img);
-      } else {
-        let paragraphs = clip.text || [];
-        for (let para of paragraphs) {
-          let newParagraph = document.createElement("p");
-          newParagraph.className = "paragraph-text";
-          newParagraph.dataset.originalText = para;
-          newParagraph.appendChild(document.createTextNode(para));
-          paragraphsWrap.appendChild(newParagraph);
-        }
-      }
-      newContainer.appendChild(paragraphsWrap);
-
-      if (Array.isArray(clip.tags) && clip.tags.length > 0) {
-        let tagRow = document.createElement("div");
-        tagRow.className = "clip-tags";
-        clip.tags.forEach(function (tag) {
-          let pill = document.createElement("span");
-          pill.className = "clip-tag";
-          pill.innerText = tag;
-          tagRow.appendChild(pill);
-        });
-        newContainer.appendChild(tagRow);
-      }
-
-      newContainer.insertBefore(headerRow, newContainer.firstChild);
-
-      collectionContainer.appendChild(newContainer);
+    if (renderState.visible.length === 0) {
+      refreshTagFilterOptions(renderState.clips);
+      return;
     }
 
-    applyCollectionSearchFilter();
-    maybeScrollToHashClip();
-  });
+    // If the URL hash points to a clip below the first batch, render enough
+    // batches up front to include it so we can scroll to it without waiting
+    // for the user to scroll past several intervening batches.
+    let initialBatches = 1;
+    if (renderState.pendingScrollHash) {
+      let hashIdx = renderState.visible.findIndex(function (c) {
+        return c.id === renderState.pendingScrollHash;
+      });
+      if (hashIdx >= 0) {
+        initialBatches = Math.ceil((hashIdx + 1) / COLLECTION_BATCH_SIZE);
+      }
+    }
 
-  refreshTagFilterOptions(clips);
+    ensureCollectionObserver();
+    for (let i = 0; i < initialBatches; i++) appendCollectionBatch();
+    refreshTagFilterOptions(renderState.clips);
+  });
 }
 
 // Returns every unique tag in the clip list, ranked by usage count desc then
@@ -757,14 +901,15 @@ function enterEditMode(clip, container) {
 }
 
 function maybeScrollToHashClip() {
-  let hash = (location.hash || "").replace(/^#/, "");
+  let hash = renderState.pendingScrollHash;
   if (!hash) return;
-  try { hash = decodeURIComponent(hash); } catch (e) {}
-  if (hash === "collection-container") return; // legacy popup link
   let target = document.querySelector(
     '#collection-container [data-clip-id="' + CSS.escape(hash) + '"]'
   );
-  if (target) target.scrollIntoView({ behavior: "smooth", block: "start" });
+  if (target) {
+    target.scrollIntoView({ behavior: "smooth", block: "start" });
+    renderState.pendingScrollHash = "";
+  }
 }
 
 // Undo toast lives in lib/toast.js (QPToast.show / QPToast.dismiss).
@@ -784,9 +929,13 @@ QPStorage.getClips().then(function (clips) {
 
   // ***********SEARCH/FILTER FUNCTIONALITY********
   let searchInput = document.getElementById("collectionSearch");
+  let searchDebounceId = null;
   searchInput.addEventListener("input", function () {
     currentQuery = searchInput.value.trim();
-    applyCollectionSearchFilter();
+    if (searchDebounceId) clearTimeout(searchDebounceId);
+    searchDebounceId = setTimeout(function () {
+      renderCollection(renderState.clips);
+    }, 100);
   });
 
   // ***********DATE-RANGE FILTER********
@@ -798,19 +947,19 @@ QPStorage.getClips().then(function (clips) {
     dateRangeSelect.addEventListener("change", function () {
       currentDateRange = dateRangeSelect.value;
       if (customWrap) customWrap.hidden = currentDateRange !== "custom";
-      QPStorage.getClips().then(renderCollection);
+      renderCollection(renderState.clips);
     });
   }
   if (dateStartInput) {
     dateStartInput.addEventListener("change", function () {
       currentDateStart = dateStartInput.value;
-      QPStorage.getClips().then(renderCollection);
+      renderCollection(renderState.clips);
     });
   }
   if (dateEndInput) {
     dateEndInput.addEventListener("change", function () {
       currentDateEnd = dateEndInput.value;
-      QPStorage.getClips().then(renderCollection);
+      renderCollection(renderState.clips);
     });
   }
   let dateResetBtn = document.getElementById("dateRangeReset");
@@ -820,7 +969,7 @@ QPStorage.getClips().then(function (clips) {
       currentDateEnd = "";
       if (dateStartInput) dateStartInput.value = "";
       if (dateEndInput) dateEndInput.value = "";
-      QPStorage.getClips().then(renderCollection);
+      renderCollection(renderState.clips);
     });
   }
 
@@ -839,7 +988,7 @@ QPStorage.getClips().then(function (clips) {
   if (filterBarTag) {
     filterBarTag.addEventListener("change", function () {
       currentTagFilter = filterBarTag.value;
-      QPStorage.getClips().then(renderCollection);
+      renderCollection(renderState.clips);
     });
   }
 
@@ -871,7 +1020,7 @@ QPStorage.getClips().then(function (clips) {
           if (searchInput) searchInput.value = currentQuery;
           if (dateRangeSelect) dateRangeSelect.value = currentDateRange;
           if (customWrap) customWrap.hidden = currentDateRange !== "custom";
-          QPStorage.getClips().then(renderCollection);
+          renderCollection(renderState.clips);
         });
         let del = document.createElement("button");
         del.type = "button";
@@ -955,6 +1104,9 @@ QPStorage.getClips().then(function (clips) {
   // Drag is enabled on every unpinned card. If the user is on a non-manual
   // sort, dropping switches them to Manual so the new order persists across
   // re-renders (otherwise the active sort would immediately undo the drop).
+  // With incremental rendering, we derive the new order from renderState.visible
+  // (the full filtered list) rather than the DOM, since not every clip may
+  // have been rendered yet.
   (function setupDragDrop() {
     let container = document.getElementById("collection-container");
     if (!container) return;
@@ -1044,8 +1196,11 @@ QPStorage.getClips().then(function (clips) {
       if (targetId === draggingId) { clearMark(); return; }
 
       let side = lastSide || "before";
-      let cards = Array.from(container.querySelectorAll(".paragraph-container[draggable='true']"));
-      let order = cards.map(function (c) { return c.dataset.clipId; });
+      // Build order from the full visible (filtered) list, not the DOM, so
+      // we don't accidentally drop un-rendered clips.
+      let order = renderState.visible
+        .filter(function (c) { return !c.pinned; })
+        .map(function (c) { return c.id; });
       let fromIdx = order.indexOf(draggingId);
       if (fromIdx === -1) { clearMark(); return; }
       order.splice(fromIdx, 1);
@@ -1157,24 +1312,25 @@ QPStorage.getClips().then(function (clips) {
   });
 
   // ***********SELECT ALL BUTTON FUNCTIONALITY********
+  // Operates on the full filtered (visible) list, not just rendered DOM cards,
+  // so users can still select-all even when incremental rendering hasn't paged
+  // through every clip yet.
   let selectAllButton = document.getElementById("selectAll");
   selectAllButton.addEventListener("click", function () {
     let selecting = selectAllButton.innerText === "Select All";
     selectAllButton.innerText = selecting ? "Deselect All" : "Select All";
 
-    // Build the set of visible clip ids in one DOM pass, then queue the storage
-    // mutation so it stays ordered with any per-checkbox writes in flight.
-    let visibleIds = [];
-    let containers = document.querySelectorAll(
+    let visibleIds = renderState.visible.map(function (c) { return c.id; });
+
+    // Sync any already-rendered checkboxes/cards so the UI matches immediately.
+    let visibleIdSet = new Set(visibleIds);
+    document.querySelectorAll(
       "#collection-container .paragraph-container"
-    );
-    containers.forEach(function (container) {
-      if (container.style.display === "none") return;
+    ).forEach(function (container) {
       let id = container.dataset.clipId;
-      if (!id) return;
+      if (!id || !visibleIdSet.has(id)) return;
       let checkbox = container.querySelector('input[type="checkbox"]');
       if (!checkbox) return;
-      visibleIds.push(id);
       if (selecting) {
         checkbox.checked = true;
         container.classList.add("is-selected");
@@ -1183,6 +1339,13 @@ QPStorage.getClips().then(function (clips) {
         container.classList.remove("is-selected");
       }
     });
+
+    // Update local + persisted selection set so newly-rendered batches reflect it.
+    if (selecting) {
+      visibleIds.forEach(function (id) { renderState.selectedIds.add(id); });
+    } else {
+      visibleIds.forEach(function (id) { renderState.selectedIds.delete(id); });
+    }
 
     mutateSelection(function (list) {
       if (selecting) {
@@ -1198,7 +1361,30 @@ QPStorage.getClips().then(function (clips) {
   });
 });
 
-window.addEventListener("hashchange", maybeScrollToHashClip);
+window.addEventListener("hashchange", function () {
+  let dir = parseHashDirective(location.hash);
+  if (dir.kind === "panel") {
+    let toggle = document.querySelector(
+      '.activity-bar__item[data-view="' + dir.name + '"]'
+    );
+    if (toggle) {
+      lastFocusedToggle = toggle;
+      setPanelView(dir.name);
+    }
+    return;
+  }
+  if (dir.kind !== "clip") return;
+  // If the target clip is already rendered, scroll directly. Otherwise re-run
+  // the collection render so initial-batch logic can page up to it.
+  let target = document.querySelector(
+    '#collection-container [data-clip-id="' + CSS.escape(dir.id) + '"]'
+  );
+  if (target) {
+    target.scrollIntoView({ behavior: "smooth", block: "start" });
+  } else if (renderState.clips.length > 0) {
+    renderCollection(renderState.clips);
+  }
+});
 
 // ***********BACK TO TOP BUTTON**************************
 let bttButton = document.getElementById("bttButton");

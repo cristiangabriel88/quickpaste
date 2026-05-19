@@ -1,14 +1,22 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en" data-theme="light">
+
 <head>
 	<meta charset="utf-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1">
-	<title>QuickPaste — A quieter clipboard for the web</title>
-	<meta name="description" content="QuickPaste is a fast, local-first Chrome extension for saving text and image clips from any page. No account. No servers. Everything stays on your device.">
+	<title>QuickPaste — Save the good parts.</title>
+	<meta name="description"
+		content="QuickPaste is a fast, local-first Chrome extension for saving text and image clips from any page. Right-click to save, or turn on Ctrl+C auto-capture. No account. No servers. Everything stays on your device.">
+
+	<link rel="icon" type="image/png" sizes="32x32" href="icons/logo32x32.png">
+	<link rel="icon" type="image/png" sizes="128x128" href="icons/logo128x128.png">
+	<link rel="apple-touch-icon" href="icons/logo128x128.png">
 
 	<link rel="preconnect" href="https://fonts.googleapis.com">
 	<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-	<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700;9..144,800&family=Inter:wght@300;400;500;600;700&family=Sora:wght@300;400;500;600&display=swap" rel="stylesheet">
+	<link
+		href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700;9..144,800&family=Inter:wght@300;400;500;600;700&family=Sora:wght@300;400;500;600&display=swap"
+		rel="stylesheet">
 
 	<style>
 		/* ------------------------------------------------------------------
@@ -36,6 +44,9 @@
 			--accent-bar: #7ab362;
 			--accent-haze: rgba(108, 201, 94, 0.12);
 
+			--footer-tint: #d8edc5;
+			--footer-tint-soft: #f1f7e6;
+
 			--radius-sm: 6px;
 			--radius-md: 10px;
 			--radius-lg: 16px;
@@ -43,7 +54,7 @@
 
 			--shadow-soft: 0 1px 2px rgba(30, 50, 20, 0.06), 0 8px 24px rgba(30, 50, 20, 0.07);
 			--shadow-card: 0 1px 2px rgba(30, 50, 20, 0.05), 0 18px 40px rgba(30, 50, 20, 0.09);
-			--shadow-pop:  0 2px 4px rgba(30, 50, 20, 0.08), 0 28px 60px rgba(30, 50, 20, 0.16);
+			--shadow-pop: 0 2px 4px rgba(30, 50, 20, 0.08), 0 28px 60px rgba(30, 50, 20, 0.16);
 		}
 
 		[data-theme="dark"] {
@@ -63,14 +74,21 @@
 			--accent-bar: #4a7a3a;
 			--accent-haze: rgba(108, 201, 94, 0.16);
 
+			--footer-tint: #2a3a23;
+			--footer-tint-soft: #1d271a;
+
 			--shadow-soft: 0 1px 2px rgba(0, 0, 0, 0.4), 0 8px 24px rgba(0, 0, 0, 0.35);
 			--shadow-card: 0 1px 2px rgba(0, 0, 0, 0.45), 0 18px 40px rgba(0, 0, 0, 0.45);
-			--shadow-pop:  0 2px 4px rgba(0, 0, 0, 0.5), 0 28px 60px rgba(0, 0, 0, 0.55);
+			--shadow-pop: 0 2px 4px rgba(0, 0, 0, 0.5), 0 28px 60px rgba(0, 0, 0, 0.55);
 		}
 
-		* { box-sizing: border-box; }
+		* {
+			box-sizing: border-box;
+		}
 
-		html { scroll-behavior: smooth; }
+		html {
+			scroll-behavior: smooth;
+		}
 
 		body {
 			margin: 0;
@@ -89,7 +107,10 @@
 			overflow-x: hidden;
 		}
 
-		::selection { background: var(--accent-haze); color: var(--text); }
+		::selection {
+			background: var(--accent-haze);
+			color: var(--text);
+		}
 
 		/* Subtle paper texture using a radial mesh — avoids the flat "AI page" feel */
 		body::before {
@@ -103,6 +124,7 @@
 				radial-gradient(800px 500px at 100% 10%, rgba(180, 219, 106, 0.07), transparent 65%),
 				radial-gradient(700px 500px at 50% 110%, rgba(91, 148, 62, 0.05), transparent 70%);
 		}
+
 		[data-theme="dark"] body::before {
 			background:
 				radial-gradient(900px 600px at 8% -10%, rgba(122, 179, 98, 0.05), transparent 60%),
@@ -110,7 +132,12 @@
 				radial-gradient(700px 500px at 50% 110%, rgba(91, 148, 62, 0.04), transparent 70%);
 		}
 
-		main, header, footer { position: relative; z-index: 1; }
+		main,
+		header,
+		footer {
+			position: relative;
+			z-index: 1;
+		}
 
 		/* ------------------------------------------------------------------
 		   Layout primitives
@@ -126,11 +153,18 @@
 			padding: 96px 0;
 		}
 
-		section + section { border-top: 1px solid var(--border); }
+		section+section {
+			border-top: 1px solid var(--border);
+		}
 
 		@media (max-width: 720px) {
-			section { padding: 64px 0; }
-			.wrap { padding: 0 20px; }
+			section {
+				padding: 64px 0;
+			}
+
+			.wrap {
+				padding: 0 20px;
+			}
 		}
 
 		/* ------------------------------------------------------------------
@@ -151,9 +185,40 @@
 			background: var(--accent-haze);
 			border: 1px solid rgba(108, 201, 94, 0.28);
 		}
-		[data-theme="dark"] .eyebrow { color: var(--accent); }
 
-		h1, h2, h3 {
+		[data-theme="dark"] .eyebrow {
+			color: var(--accent);
+		}
+
+		.eyebrow--new {
+			background: linear-gradient(135deg, var(--accent-soft) 0%, var(--accent) 100%);
+			color: #1a3812;
+			border-color: rgba(70, 121, 44, 0.5);
+			box-shadow: 0 4px 14px rgba(91, 148, 62, 0.28);
+			padding-left: 8px;
+		}
+
+		.eyebrow--new .eyebrow__dot {
+			width: 6px;
+			height: 6px;
+			border-radius: 50%;
+			background: #1a3812;
+			box-shadow: 0 0 0 0 rgba(26, 56, 18, 0.5);
+			animation: qpPulse 2.2s ease-out infinite;
+		}
+
+		[data-theme="dark"] .eyebrow--new {
+			color: #f3fbe9;
+			border-color: rgba(122, 179, 98, 0.55);
+		}
+
+		[data-theme="dark"] .eyebrow--new .eyebrow__dot {
+			background: #f3fbe9;
+		}
+
+		h1,
+		h2,
+		h3 {
 			font-family: var(--font-display);
 			font-weight: 600;
 			letter-spacing: -0.02em;
@@ -194,8 +259,15 @@
 			line-height: 1.3;
 		}
 
-		p { margin: 0; color: var(--text-muted); }
-		p strong { color: var(--text); font-weight: 600; }
+		p {
+			margin: 0;
+			color: var(--text-muted);
+		}
+
+		p strong {
+			color: var(--text);
+			font-weight: 600;
+		}
 
 		.lede {
 			font-size: clamp(1.05rem, 1.6vw, 1.22rem);
@@ -212,11 +284,17 @@
 			text-transform: uppercase;
 			color: var(--accent-deep);
 		}
-		[data-theme="dark"] .kicker { color: var(--accent); }
 
-		.muted { color: var(--text-muted); }
+		[data-theme="dark"] .kicker {
+			color: var(--accent);
+		}
 
-		code, kbd {
+		.muted {
+			color: var(--text-muted);
+		}
+
+		code,
+		kbd {
 			font-family: var(--font-mono);
 			font-size: 0.86em;
 		}
@@ -234,6 +312,47 @@
 			font-size: 0.78em;
 			font-family: var(--font-button);
 			font-weight: 500;
+		}
+
+		.kbd--xl {
+			padding: 4px 12px 6px;
+			border-bottom-width: 3px;
+			border-radius: 8px;
+			font-size: 0.7em;
+			letter-spacing: 0.04em;
+			background: var(--bg-elevated);
+		}
+
+		h2 em .kbd--xl {
+			font-style: normal;
+			color: var(--text);
+		}
+
+		.kbd--hero {
+			display: inline-grid;
+			place-items: center;
+			min-width: 78px;
+			height: 78px;
+			padding: 0 22px;
+			background: linear-gradient(180deg, var(--bg-elevated) 0%, color-mix(in srgb, var(--surface) 60%, var(--bg-elevated)) 100%);
+			border: 1px solid var(--border-strong);
+			border-bottom-width: 5px;
+			border-radius: 14px;
+			color: var(--text);
+			font-family: var(--font-button);
+			font-size: 1.45rem;
+			font-weight: 600;
+			letter-spacing: 0.01em;
+			box-shadow:
+				0 1px 0 rgba(255, 255, 255, 0.6) inset,
+				0 12px 28px rgba(30, 50, 20, 0.12);
+		}
+
+		[data-theme="dark"] .kbd--hero {
+			background: linear-gradient(180deg, #2a2a30 0%, #1f1f24 100%);
+			box-shadow:
+				0 1px 0 rgba(255, 255, 255, 0.06) inset,
+				0 12px 28px rgba(0, 0, 0, 0.45);
 		}
 
 		/* ------------------------------------------------------------------
@@ -268,18 +387,20 @@
 		}
 
 		.brand__mark {
-			width: 30px;
-			height: 30px;
+			width: 32px;
+			height: 32px;
 			display: inline-grid;
 			place-items: center;
-			border-radius: 50%;
-			background: radial-gradient(circle at 35% 30%, #ffffff 0%, #f6f8f1 55%, #e9efdc 100%);
-			box-shadow:
-				0 1px 2px rgba(0, 0, 0, 0.18),
-				0 2px 6px rgba(30, 50, 20, 0.18),
-				inset 0 0 0 1px rgba(255, 255, 255, 0.7);
+			flex-shrink: 0;
 		}
-		.brand__mark svg { width: 18px; height: 18px; }
+
+		.brand__mark img {
+			width: 100%;
+			height: 100%;
+			object-fit: contain;
+			display: block;
+			filter: drop-shadow(0 1px 2px rgba(30, 50, 20, 0.18));
+		}
 
 		.brand__name {
 			font-family: var(--font-display);
@@ -304,7 +425,11 @@
 			border-radius: 999px;
 			transition: color 0.15s ease, background-color 0.15s ease;
 		}
-		.nav-links a:hover { color: var(--text); background: var(--surface); }
+
+		.nav-links a:hover {
+			color: var(--text);
+			background: var(--surface);
+		}
 
 		.theme-toggle {
 			width: 36px;
@@ -318,14 +443,34 @@
 			place-items: center;
 			transition: color 0.15s ease, border-color 0.15s ease, transform 0.2s ease;
 		}
-		.theme-toggle:hover { color: var(--accent); border-color: var(--accent); transform: rotate(-15deg); }
-		.theme-toggle svg { width: 16px; height: 16px; }
-		.theme-toggle .icon-moon { display: none; }
-		[data-theme="dark"] .theme-toggle .icon-sun { display: none; }
-		[data-theme="dark"] .theme-toggle .icon-moon { display: block; }
+
+		.theme-toggle:hover {
+			color: var(--accent);
+			border-color: var(--accent);
+			transform: rotate(-15deg);
+		}
+
+		.theme-toggle svg {
+			width: 16px;
+			height: 16px;
+		}
+
+		.theme-toggle .icon-moon {
+			display: none;
+		}
+
+		[data-theme="dark"] .theme-toggle .icon-sun {
+			display: none;
+		}
+
+		[data-theme="dark"] .theme-toggle .icon-moon {
+			display: block;
+		}
 
 		@media (max-width: 720px) {
-			.nav-links a:not(.nav-links__cta) { display: none; }
+			.nav-links a:not(.nav-links__cta) {
+				display: none;
+			}
 		}
 
 		/* ------------------------------------------------------------------
@@ -357,6 +502,7 @@
 				0 2px 4px rgba(79, 85, 54, 0.25),
 				0 8px 18px rgba(91, 148, 62, 0.18);
 		}
+
 		.btn--primary:hover {
 			transform: translateY(-1px);
 			box-shadow:
@@ -364,18 +510,31 @@
 				0 3px 6px rgba(79, 85, 54, 0.3),
 				0 12px 24px rgba(91, 148, 62, 0.25);
 		}
-		.btn--primary:active { transform: translateY(0); }
+
+		.btn--primary:active {
+			transform: translateY(0);
+		}
 
 		.btn--ghost {
 			color: var(--text);
 			background: var(--bg-elevated);
 			border-color: var(--border);
-			box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+			box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
 		}
-		.btn--ghost:hover { border-color: var(--accent); color: var(--accent-deep); }
-		[data-theme="dark"] .btn--ghost:hover { color: var(--accent); }
 
-		.btn svg { width: 16px; height: 16px; }
+		.btn--ghost:hover {
+			border-color: var(--accent);
+			color: var(--accent-deep);
+		}
+
+		[data-theme="dark"] .btn--ghost:hover {
+			color: var(--accent);
+		}
+
+		.btn svg {
+			width: 16px;
+			height: 16px;
+		}
 
 		/* ------------------------------------------------------------------
 		   Hero
@@ -391,19 +550,127 @@
 			gap: 64px;
 			align-items: center;
 		}
+
 		@media (max-width: 960px) {
-			.hero__inner { grid-template-columns: 1fr; gap: 48px; }
+			.hero__inner {
+				grid-template-columns: 1fr;
+				gap: 48px;
+			}
 		}
 
-		.hero h1 { margin-top: 22px; }
+		.hero h1 {
+			margin-top: 22px;
+		}
 
-		.hero .lede { margin-top: 22px; }
+		.hero .lede {
+			margin-top: 22px;
+		}
 
 		.hero__meta {
 			display: flex;
 			gap: 14px;
 			margin-top: 32px;
 			flex-wrap: wrap;
+		}
+
+		.hero__newchip {
+			display: inline-flex;
+			align-items: center;
+			gap: 12px;
+			margin-top: 24px;
+			padding: 9px 16px 9px 12px;
+			border-radius: 999px;
+			background: linear-gradient(180deg, color-mix(in srgb, var(--accent-soft) 32%, var(--bg-elevated)) 0%, var(--bg-elevated) 100%);
+			border: 1px solid rgba(108, 201, 94, 0.34);
+			box-shadow: 0 1px 0 rgba(255, 255, 255, 0.5) inset, 0 6px 18px rgba(91, 148, 62, 0.12);
+			text-decoration: none;
+			color: var(--text);
+			font-size: 0.9rem;
+			line-height: 1.3;
+			transition: transform 0.18s ease, box-shadow 0.2s ease, border-color 0.15s ease;
+			max-width: 100%;
+		}
+
+		.hero__newchip:hover {
+			transform: translateY(-1px);
+			border-color: rgba(91, 148, 62, 0.6);
+			box-shadow: 0 1px 0 rgba(255, 255, 255, 0.6) inset, 0 10px 26px rgba(91, 148, 62, 0.2);
+		}
+
+		.hero__newchip-pulse {
+			position: relative;
+			width: 10px;
+			height: 10px;
+			border-radius: 50%;
+			background: var(--accent);
+			box-shadow: 0 0 0 0 rgba(108, 201, 94, 0.55);
+			animation: qpPulse 2.2s ease-out infinite;
+			flex-shrink: 0;
+		}
+
+		@keyframes qpPulse {
+			0% {
+				box-shadow: 0 0 0 0 rgba(108, 201, 94, 0.55);
+			}
+
+			70% {
+				box-shadow: 0 0 0 12px rgba(108, 201, 94, 0);
+			}
+
+			100% {
+				box-shadow: 0 0 0 0 rgba(108, 201, 94, 0);
+			}
+		}
+
+		@media (prefers-reduced-motion: reduce) {
+			.hero__newchip-pulse {
+				animation: none;
+			}
+		}
+
+		.hero__newchip-label {
+			font-family: var(--font-button);
+			font-size: 0.7rem;
+			font-weight: 600;
+			letter-spacing: 0.12em;
+			text-transform: uppercase;
+			color: var(--accent-deep);
+			padding: 2px 8px;
+			border-radius: 999px;
+			background: var(--accent-haze);
+			border: 1px solid rgba(108, 201, 94, 0.3);
+		}
+
+		[data-theme="dark"] .hero__newchip-label {
+			color: var(--accent);
+		}
+
+		.hero__newchip-text {
+			color: var(--text);
+			font-weight: 500;
+		}
+
+		.hero__newchip-text kbd {
+			margin: 0 1px;
+		}
+
+		.hero__newchip svg {
+			width: 16px;
+			height: 16px;
+			color: var(--accent-deep);
+			flex-shrink: 0;
+		}
+
+		[data-theme="dark"] .hero__newchip svg {
+			color: var(--accent);
+		}
+
+		@media (max-width: 720px) {
+			.hero__newchip {
+				flex-wrap: wrap;
+				gap: 8px 10px;
+				padding: 10px 14px;
+			}
 		}
 
 		.hero__factstrip {
@@ -420,6 +687,7 @@
 			flex-direction: column;
 			gap: 2px;
 		}
+
 		.fact__num {
 			font-family: var(--font-display);
 			font-size: 1.55rem;
@@ -428,11 +696,13 @@
 			letter-spacing: -0.02em;
 			line-height: 1;
 		}
+
 		.fact__num em {
 			font-style: italic;
 			color: var(--accent);
 			font-weight: 500;
 		}
+
 		.fact__label {
 			font-family: var(--font-button);
 			font-size: 0.72rem;
@@ -476,11 +746,31 @@
 			background: var(--surface);
 			border-bottom: 1px solid var(--border);
 		}
-		.browser__dots { display: flex; gap: 6px; }
-		.browser__dot { width: 10px; height: 10px; border-radius: 50%; background: var(--border-strong); }
-		.browser__dot:nth-child(1) { background: #ff6058; }
-		.browser__dot:nth-child(2) { background: #ffbd2e; }
-		.browser__dot:nth-child(3) { background: #28c940; }
+
+		.browser__dots {
+			display: flex;
+			gap: 6px;
+		}
+
+		.browser__dot {
+			width: 10px;
+			height: 10px;
+			border-radius: 50%;
+			background: var(--border-strong);
+		}
+
+		.browser__dot:nth-child(1) {
+			background: #ff6058;
+		}
+
+		.browser__dot:nth-child(2) {
+			background: #ffbd2e;
+		}
+
+		.browser__dot:nth-child(3) {
+			background: #28c940;
+		}
+
 		.browser__url {
 			flex: 1;
 			padding: 6px 12px;
@@ -495,6 +785,7 @@
 			text-overflow: ellipsis;
 			white-space: nowrap;
 		}
+
 		.browser__action {
 			display: inline-grid;
 			place-items: center;
@@ -505,7 +796,11 @@
 			color: #fff;
 			box-shadow: rgba(79, 85, 54, 0.3) 0 2px 4px 0;
 		}
-		.browser__action svg { width: 14px; height: 14px; }
+
+		.browser__action svg {
+			width: 14px;
+			height: 14px;
+		}
 
 		.browser__body {
 			position: relative;
@@ -523,6 +818,7 @@
 			line-height: 1.7;
 			max-width: 480px;
 		}
+
 		.mock-article h4 {
 			font-family: var(--font-display);
 			font-size: 1.5rem;
@@ -531,6 +827,7 @@
 			margin: 0 0 12px;
 			letter-spacing: -0.015em;
 		}
+
 		.mock-article .highlighted {
 			background: linear-gradient(180deg, transparent 55%, rgba(180, 219, 106, 0.55) 55%, rgba(180, 219, 106, 0.55) 92%, transparent 92%);
 			color: var(--text);
@@ -550,7 +847,10 @@
 			overflow: hidden;
 			transform: rotate(0.4deg);
 		}
-		[data-theme="dark"] .popup-mock { background: #232328; }
+
+		[data-theme="dark"] .popup-mock {
+			background: #232328;
+		}
 
 		.popup-mock__bar {
 			display: flex;
@@ -566,15 +866,18 @@
 		.popup-mock__logo {
 			width: 28px;
 			height: 28px;
-			border-radius: 50%;
-			background: radial-gradient(circle at 35% 30%, #ffffff 0%, #f6f8f1 55%, #e9efdc 100%);
 			display: grid;
 			place-items: center;
-			box-shadow:
-				0 1px 2px rgba(0, 0, 0, 0.18),
-				inset 0 0 0 1px rgba(255, 255, 255, 0.7);
+			flex-shrink: 0;
 		}
-		.popup-mock__logo svg { width: 16px; height: 16px; }
+
+		.popup-mock__logo img {
+			width: 100%;
+			height: 100%;
+			object-fit: contain;
+			display: block;
+			filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.18));
+		}
 
 		.popup-mock__title {
 			flex: 1;
@@ -599,7 +902,11 @@
 			color: #1a1a1a;
 			box-shadow: rgba(79, 85, 54, 0.5) 0 2px 4px 0;
 		}
-		.popup-mock__pill svg { width: 12px; height: 12px; }
+
+		.popup-mock__pill svg {
+			width: 12px;
+			height: 12px;
+		}
 
 		.popup-mock__tabs {
 			display: grid;
@@ -607,6 +914,7 @@
 			border-bottom: 1px solid var(--border);
 			padding: 0 8px;
 		}
+
 		.popup-mock__tab {
 			padding: 8px 0;
 			text-align: center;
@@ -617,22 +925,53 @@
 			border-bottom: 2px solid transparent;
 			margin-bottom: -1px;
 		}
+
 		.popup-mock__tab.is-active {
 			color: var(--accent);
 			border-bottom-color: var(--accent);
 		}
 
-		.popup-mock__clips { padding: 10px 12px 14px; }
-		.popup-mock__clip { padding: 8px 0; border-left: 2px solid transparent; padding-left: 8px; }
-		.popup-mock__clip + .popup-mock__clip { border-top: 1px solid var(--border); margin-top: 4px; padding-top: 12px; }
-		.popup-mock__clip--pin { border-left-color: var(--accent); background: rgba(108, 201, 94, 0.06); border-radius: 4px; }
-		.popup-mock__meta {
-			display: flex; align-items: center; gap: 6px;
-			font-size: 0.68rem; color: var(--text-faint); margin-bottom: 4px;
+		.popup-mock__clips {
+			padding: 10px 12px 14px;
 		}
-		.popup-mock__meta svg { width: 11px; height: 11px; color: var(--accent); }
+
+		.popup-mock__clip {
+			padding: 8px 0;
+			border-left: 2px solid transparent;
+			padding-left: 8px;
+		}
+
+		.popup-mock__clip+.popup-mock__clip {
+			border-top: 1px solid var(--border);
+			margin-top: 4px;
+			padding-top: 12px;
+		}
+
+		.popup-mock__clip--pin {
+			border-left-color: var(--accent);
+			background: rgba(108, 201, 94, 0.06);
+			border-radius: 4px;
+		}
+
+		.popup-mock__meta {
+			display: flex;
+			align-items: center;
+			gap: 6px;
+			font-size: 0.68rem;
+			color: var(--text-faint);
+			margin-bottom: 4px;
+		}
+
+		.popup-mock__meta svg {
+			width: 11px;
+			height: 11px;
+			color: var(--accent);
+		}
+
 		.popup-mock__text {
-			font-size: 0.82rem; line-height: 1.45; color: var(--text);
+			font-size: 0.82rem;
+			line-height: 1.45;
+			color: var(--text);
 			margin: 0;
 			display: -webkit-box;
 			-webkit-line-clamp: 2;
@@ -640,7 +979,13 @@
 			-webkit-box-orient: vertical;
 			overflow: hidden;
 		}
-		.popup-mock__tagrow { display: flex; gap: 5px; margin-top: 6px; }
+
+		.popup-mock__tagrow {
+			display: flex;
+			gap: 5px;
+			margin-top: 6px;
+		}
+
 		.popup-mock__tag {
 			font-family: var(--font-sans);
 			font-size: 0.62rem;
@@ -651,7 +996,10 @@
 			color: var(--accent-deep);
 			border: 1px solid rgba(108, 201, 94, 0.3);
 		}
-		[data-theme="dark"] .popup-mock__tag { color: var(--accent); }
+
+		[data-theme="dark"] .popup-mock__tag {
+			color: var(--accent);
+		}
 
 		/* ------------------------------------------------------------------
 		   Section heading block
@@ -660,8 +1008,15 @@
 			max-width: 720px;
 			margin-bottom: 56px;
 		}
-		.section-head h2 { margin-top: 16px; }
-		.section-head p { margin-top: 18px; font-size: 1.06rem; }
+
+		.section-head h2 {
+			margin-top: 16px;
+		}
+
+		.section-head p {
+			margin-top: 18px;
+			font-size: 1.06rem;
+		}
 
 		/* ------------------------------------------------------------------
 		   Feature row (image + copy, alternating)
@@ -672,22 +1027,58 @@
 			gap: 72px;
 			align-items: center;
 		}
-		.feature-row + .feature-row { margin-top: 120px; }
-		.feature-row--flip { grid-template-columns: 1fr 1.05fr; }
-		.feature-row--flip .feature-row__copy { order: 2; }
-		.feature-row--flip .feature-row__media { order: 1; }
 
-		@media (max-width: 880px) {
-			.feature-row, .feature-row--flip { grid-template-columns: 1fr; gap: 40px; }
-			.feature-row + .feature-row { margin-top: 80px; }
-			.feature-row--flip .feature-row__copy,
-			.feature-row--flip .feature-row__media { order: initial; }
+		.feature-row+.feature-row {
+			margin-top: 120px;
 		}
 
-		.feature-row__copy .kicker { display: inline-block; margin-bottom: 14px; }
-		.feature-row__copy h2 { margin-bottom: 18px; }
-		.feature-row__copy p { font-size: 1.02rem; line-height: 1.62; }
-		.feature-row__copy p + p { margin-top: 14px; }
+		.feature-row--flip {
+			grid-template-columns: 1fr 1.05fr;
+		}
+
+		.feature-row--flip .feature-row__copy {
+			order: 2;
+		}
+
+		.feature-row--flip .feature-row__media {
+			order: 1;
+		}
+
+		@media (max-width: 880px) {
+
+			.feature-row,
+			.feature-row--flip {
+				grid-template-columns: 1fr;
+				gap: 40px;
+			}
+
+			.feature-row+.feature-row {
+				margin-top: 80px;
+			}
+
+			.feature-row--flip .feature-row__copy,
+			.feature-row--flip .feature-row__media {
+				order: initial;
+			}
+		}
+
+		.feature-row__copy .kicker {
+			display: inline-block;
+			margin-bottom: 14px;
+		}
+
+		.feature-row__copy h2 {
+			margin-bottom: 18px;
+		}
+
+		.feature-row__copy p {
+			font-size: 1.02rem;
+			line-height: 1.62;
+		}
+
+		.feature-row__copy p+p {
+			margin-top: 14px;
+		}
 
 		.bulletlist {
 			list-style: none;
@@ -696,6 +1087,7 @@
 			display: grid;
 			gap: 12px;
 		}
+
 		.bulletlist li {
 			display: grid;
 			grid-template-columns: 22px 1fr;
@@ -704,16 +1096,31 @@
 			font-size: 0.96rem;
 			color: var(--text-muted);
 		}
-		.bulletlist li strong { color: var(--text); font-weight: 600; }
+
+		.bulletlist li strong {
+			color: var(--text);
+			font-weight: 600;
+		}
+
 		.bulletlist__bullet {
-			width: 22px; height: 22px; margin-top: 1px;
-			display: grid; place-items: center;
+			width: 22px;
+			height: 22px;
+			margin-top: 1px;
+			display: grid;
+			place-items: center;
 			border-radius: 50%;
 			background: var(--accent-haze);
 			color: var(--accent-deep);
 		}
-		.bulletlist__bullet svg { width: 12px; height: 12px; }
-		[data-theme="dark"] .bulletlist__bullet { color: var(--accent); }
+
+		.bulletlist__bullet svg {
+			width: 12px;
+			height: 12px;
+		}
+
+		[data-theme="dark"] .bulletlist__bullet {
+			color: var(--accent);
+		}
 
 		/* ------------------------------------------------------------------
 		   Image / screenshot placeholder
@@ -767,8 +1174,15 @@
 			color: var(--accent-deep);
 			border: 1px solid rgba(108, 201, 94, 0.3);
 		}
-		[data-theme="dark"] .shot__icon { color: var(--accent); }
-		.shot__icon svg { width: 26px; height: 26px; }
+
+		[data-theme="dark"] .shot__icon {
+			color: var(--accent);
+		}
+
+		.shot__icon svg {
+			width: 26px;
+			height: 26px;
+		}
 
 		.shot__title {
 			font-family: var(--font-display);
@@ -804,7 +1218,10 @@
 			border-radius: 6px;
 			padding: 3px 9px;
 		}
-		[data-theme="dark"] .shot__filename { color: var(--accent); }
+
+		[data-theme="dark"] .shot__filename {
+			color: var(--accent);
+		}
 
 		.shot__caption {
 			position: relative;
@@ -814,10 +1231,17 @@
 			font-size: 0.8rem;
 			color: var(--text-muted);
 		}
-		.shot__caption strong { color: var(--text); font-weight: 600; }
+
+		.shot__caption strong {
+			color: var(--text);
+			font-weight: 600;
+		}
 
 		/* Compact variant for grid usage */
-		.shot--compact .shot__frame { min-height: 200px; aspect-ratio: 4 / 3; }
+		.shot--compact .shot__frame {
+			min-height: 200px;
+			aspect-ratio: 4 / 3;
+		}
 
 		/* ------------------------------------------------------------------
 		   The flow strip ("how it works in three steps")
@@ -828,8 +1252,11 @@
 			gap: 24px;
 			counter-reset: step;
 		}
+
 		@media (max-width: 880px) {
-			.steps { grid-template-columns: 1fr; }
+			.steps {
+				grid-template-columns: 1fr;
+			}
 		}
 
 		.step {
@@ -858,9 +1285,267 @@
 			font-weight: 600;
 		}
 
-		.step p { margin-top: 8px; font-size: 0.94rem; }
+		.step p {
+			margin-top: 8px;
+			font-size: 0.94rem;
+		}
 
-		.step__kbd { margin-top: 14px; }
+		.step__kbd {
+			margin-top: 14px;
+		}
+
+		.step__alt {
+			margin-top: 14px;
+			padding-top: 12px;
+			border-top: 1px dashed var(--border);
+			font-size: 0.86rem;
+			color: var(--text-muted);
+		}
+
+		.step__alt strong {
+			color: var(--accent-deep);
+			font-weight: 600;
+		}
+
+		[data-theme="dark"] .step__alt strong {
+			color: var(--accent);
+		}
+
+		.step__alt a {
+			color: var(--accent-deep);
+			text-decoration: none;
+			font-weight: 600;
+		}
+
+		.step__alt a:hover {
+			text-decoration: underline;
+		}
+
+		[data-theme="dark"] .step__alt a {
+			color: var(--accent);
+		}
+
+		/* ------------------------------------------------------------------
+		   Auto-capture spotlight (Ctrl+C feature)
+		   ------------------------------------------------------------------ */
+		.autocap__card {
+			position: relative;
+			display: grid;
+			grid-template-columns: 1.1fr 0.9fr;
+			gap: 56px;
+			align-items: center;
+			padding: 60px 56px;
+			background:
+				radial-gradient(700px 300px at 90% 0%, rgba(180, 219, 106, 0.16), transparent 65%),
+				radial-gradient(500px 360px at 0% 100%, rgba(108, 201, 94, 0.10), transparent 65%),
+				var(--bg-elevated);
+			border: 1px solid var(--border);
+			border-radius: var(--radius-xl);
+			box-shadow: var(--shadow-card);
+			overflow: hidden;
+		}
+
+		.autocap__card::before {
+			content: "";
+			position: absolute;
+			top: -1px;
+			left: 0;
+			right: 0;
+			height: 3px;
+			background: linear-gradient(90deg, transparent 0%, var(--accent-soft) 30%, var(--accent) 50%, var(--accent-soft) 70%, transparent 100%);
+		}
+
+		@media (max-width: 960px) {
+			.autocap__card {
+				grid-template-columns: 1fr;
+				gap: 44px;
+				padding: 44px 28px;
+			}
+		}
+
+		@media (max-width: 720px) {
+			.autocap__card {
+				padding: 36px 22px;
+			}
+		}
+
+		.autocap__copy h2 {
+			margin-top: 18px;
+			font-size: clamp(1.9rem, 3.6vw, 2.8rem);
+		}
+
+		.autocap__copy h2 em {
+			display: inline-flex;
+			align-items: baseline;
+			gap: 6px;
+			flex-wrap: wrap;
+		}
+
+		.autocap__visual {
+			position: relative;
+			display: flex;
+			flex-direction: column;
+			align-items: center;
+			gap: 22px;
+			padding: 32px 20px;
+			border-radius: var(--radius-lg);
+			background:
+				radial-gradient(circle at 50% 0%, rgba(180, 219, 106, 0.18), transparent 65%),
+				color-mix(in srgb, var(--surface) 75%, var(--bg-elevated));
+			border: 1px dashed var(--border-strong);
+		}
+
+		.autocap__keys {
+			display: inline-flex;
+			align-items: center;
+			gap: 14px;
+			padding: 14px 18px;
+			border-radius: 16px;
+			background: var(--bg-elevated);
+			border: 1px solid var(--border);
+			box-shadow: var(--shadow-soft);
+		}
+
+		.autocap__plus {
+			font-family: var(--font-display);
+			font-size: 1.4rem;
+			font-weight: 500;
+			color: var(--text-muted);
+		}
+
+		.autocap__arrow {
+			width: 38px;
+			height: 38px;
+			display: grid;
+			place-items: center;
+			border-radius: 50%;
+			background: var(--accent-haze);
+			color: var(--accent-deep);
+			border: 1px solid rgba(108, 201, 94, 0.32);
+			animation: qpArrowBob 2.6s ease-in-out infinite;
+		}
+
+		[data-theme="dark"] .autocap__arrow {
+			color: var(--accent);
+		}
+
+		.autocap__arrow svg {
+			width: 18px;
+			height: 18px;
+		}
+
+		@keyframes qpArrowBob {
+
+			0%,
+			100% {
+				transform: translateY(0);
+			}
+
+			50% {
+				transform: translateY(4px);
+			}
+		}
+
+		@media (prefers-reduced-motion: reduce) {
+			.autocap__arrow {
+				animation: none;
+			}
+		}
+
+		.autocap__chip {
+			display: flex;
+			flex-direction: column;
+			gap: 6px;
+			padding: 14px 16px 16px;
+			border-radius: 14px;
+			background: var(--bg-elevated);
+			border: 1px solid var(--border);
+			box-shadow: var(--shadow-pop);
+			min-width: 280px;
+			max-width: 360px;
+			width: 100%;
+		}
+
+		.autocap__chip-bar {
+			display: flex;
+			align-items: center;
+			gap: 10px;
+			padding-bottom: 8px;
+			border-bottom: 1px solid var(--border);
+		}
+
+		.autocap__chip-title {
+			font-family: var(--font-button);
+			font-size: 0.78rem;
+			font-weight: 600;
+			color: var(--accent-deep);
+			letter-spacing: 0.02em;
+		}
+
+		[data-theme="dark"] .autocap__chip-title {
+			color: var(--accent);
+		}
+
+		.autocap__chip-text {
+			font-family: var(--font-display);
+			font-size: 0.95rem;
+			color: var(--text);
+			line-height: 1.4;
+			padding-top: 4px;
+		}
+
+		.autocap__chip-meta {
+			font-family: var(--font-button);
+			font-size: 0.7rem;
+			letter-spacing: 0.04em;
+			color: var(--text-faint);
+		}
+
+		.autocap__setting {
+			display: flex;
+			align-items: center;
+			justify-content: space-between;
+			gap: 14px;
+			width: 100%;
+			max-width: 360px;
+			padding: 12px 14px;
+			border-radius: 12px;
+			background: color-mix(in srgb, var(--surface) 65%, var(--bg-elevated));
+			border: 1px solid var(--border);
+			font-size: 0.85rem;
+			color: var(--text);
+			flex-wrap: wrap;
+		}
+
+		.autocap__setting-row {
+			display: inline-flex;
+			align-items: center;
+			gap: 10px;
+			font-weight: 500;
+		}
+
+		.autocap__setting-check {
+			width: 20px;
+			height: 20px;
+			display: grid;
+			place-items: center;
+			border-radius: 6px;
+			background: var(--accent);
+			color: #fff;
+			box-shadow: 0 1px 2px rgba(91, 148, 62, 0.35);
+		}
+
+		.autocap__setting-check svg {
+			width: 12px;
+			height: 12px;
+		}
+
+		.autocap__setting-note {
+			font-family: var(--font-button);
+			font-size: 0.7rem;
+			letter-spacing: 0.04em;
+			color: var(--text-faint);
+		}
 
 		/* ------------------------------------------------------------------
 		   Two-column "everything" feature grid
@@ -870,11 +1555,17 @@
 			grid-template-columns: repeat(3, 1fr);
 			gap: 18px;
 		}
+
 		@media (max-width: 880px) {
-			.feature-grid { grid-template-columns: repeat(2, 1fr); }
+			.feature-grid {
+				grid-template-columns: repeat(2, 1fr);
+			}
 		}
+
 		@media (max-width: 560px) {
-			.feature-grid { grid-template-columns: 1fr; }
+			.feature-grid {
+				grid-template-columns: 1fr;
+			}
 		}
 
 		.feature-card {
@@ -884,6 +1575,7 @@
 			border-radius: var(--radius-md);
 			transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
 		}
+
 		.feature-card:hover {
 			transform: translateY(-2px);
 			border-color: rgba(108, 201, 94, 0.45);
@@ -891,7 +1583,8 @@
 		}
 
 		.feature-card__icon {
-			width: 38px; height: 38px;
+			width: 38px;
+			height: 38px;
 			border-radius: 10px;
 			display: grid;
 			place-items: center;
@@ -899,11 +1592,92 @@
 			color: var(--accent-deep);
 			margin-bottom: 14px;
 		}
-		[data-theme="dark"] .feature-card__icon { color: var(--accent); }
-		.feature-card__icon svg { width: 18px; height: 18px; }
 
-		.feature-card h3 { font-size: 1rem; margin-bottom: 6px; }
-		.feature-card p { font-size: 0.9rem; line-height: 1.55; }
+		[data-theme="dark"] .feature-card__icon {
+			color: var(--accent);
+		}
+
+		.feature-card__icon svg {
+			width: 18px;
+			height: 18px;
+		}
+
+		.feature-card h3 {
+			font-size: 1rem;
+			margin-bottom: 6px;
+		}
+
+		.feature-card p {
+			font-size: 0.9rem;
+			line-height: 1.55;
+		}
+
+		.feature-card p a {
+			color: var(--accent-deep);
+			text-decoration: none;
+			font-weight: 600;
+		}
+
+		.feature-card p a:hover {
+			text-decoration: underline;
+		}
+
+		[data-theme="dark"] .feature-card p a {
+			color: var(--accent);
+		}
+
+		.feature-card h3 kbd {
+			font-size: 0.6em;
+			margin: 0 1px;
+			vertical-align: 2px;
+		}
+
+		.feature-card--accent {
+			position: relative;
+			background:
+				radial-gradient(420px 220px at 100% 0%, rgba(180, 219, 106, 0.20), transparent 60%),
+				var(--bg-elevated);
+			border-color: rgba(108, 201, 94, 0.4);
+		}
+
+		.feature-card--accent:hover {
+			border-color: rgba(91, 148, 62, 0.7);
+			box-shadow: 0 16px 36px rgba(91, 148, 62, 0.18);
+		}
+
+		.feature-card__link {
+			position: absolute;
+			inset: 0;
+			border-radius: inherit;
+			z-index: 1;
+			text-decoration: none;
+		}
+
+		.feature-card--accent>*:not(.feature-card__link) {
+			position: relative;
+			z-index: 2;
+		}
+
+		.feature-card__badge {
+			position: absolute;
+			top: 14px;
+			right: 14px;
+			padding: 3px 9px;
+			border-radius: 999px;
+			font-family: var(--font-button);
+			font-size: 0.62rem;
+			font-weight: 600;
+			letter-spacing: 0.12em;
+			text-transform: uppercase;
+			background: linear-gradient(135deg, var(--accent-soft), var(--accent));
+			color: #1a3812;
+			box-shadow: 0 2px 6px rgba(91, 148, 62, 0.3);
+			z-index: 3;
+		}
+
+		[data-theme="dark"] .feature-card__badge {
+			color: #f3fbe9;
+		}
 
 		/* ------------------------------------------------------------------
 		   Send-to grid (logos + descriptions)
@@ -913,8 +1687,11 @@
 			grid-template-columns: repeat(3, 1fr);
 			gap: 18px;
 		}
+
 		@media (max-width: 880px) {
-			.sendto-grid { grid-template-columns: 1fr; }
+			.sendto-grid {
+				grid-template-columns: 1fr;
+			}
 		}
 
 		.sendto {
@@ -924,25 +1701,52 @@
 			border-radius: var(--radius-md);
 			text-align: left;
 		}
+
 		.sendto__head {
-			display: flex; align-items: center; gap: 12px;
+			display: flex;
+			align-items: center;
+			gap: 12px;
 			margin-bottom: 12px;
 		}
+
 		.sendto__mark {
-			width: 38px; height: 38px; border-radius: 10px;
+			width: 38px;
+			height: 38px;
+			border-radius: 10px;
 			background: var(--surface);
-			display: grid; place-items: center;
+			display: grid;
+			place-items: center;
 			color: var(--text);
 			font-family: var(--font-display);
 			font-weight: 700;
 			font-size: 1rem;
 			border: 1px solid var(--border);
 		}
-		.sendto__mark--obsidian { background: linear-gradient(135deg, #7c3aed, #6d28d9); color: #fff; border-color: transparent; }
-		.sendto__mark--notion { background: #fff; color: #1a1a1a; }
-		.sendto__mark--gdocs { background: #1a73e8; color: #fff; border-color: transparent; }
-		.sendto h3 { font-size: 1rem; }
-		.sendto p { font-size: 0.9rem; }
+
+		.sendto__mark--obsidian {
+			background: linear-gradient(135deg, #7c3aed, #6d28d9);
+			color: #fff;
+			border-color: transparent;
+		}
+
+		.sendto__mark--notion {
+			background: #fff;
+			color: #1a1a1a;
+		}
+
+		.sendto__mark--gdocs {
+			background: #1a73e8;
+			color: #fff;
+			border-color: transparent;
+		}
+
+		.sendto h3 {
+			font-size: 1rem;
+		}
+
+		.sendto p {
+			font-size: 0.9rem;
+		}
 
 		/* ------------------------------------------------------------------
 		   Privacy callout (large quote-card)
@@ -958,34 +1762,53 @@
 			gap: 32px;
 			align-items: center;
 		}
+
 		@media (max-width: 720px) {
-			.privacy { grid-template-columns: 1fr; padding: 36px 28px; gap: 22px; }
+			.privacy {
+				grid-template-columns: 1fr;
+				padding: 36px 28px;
+				gap: 22px;
+			}
 		}
 
 		.privacy__seal {
-			width: 88px; height: 88px;
+			width: 88px;
+			height: 88px;
 			border-radius: 50%;
-			display: grid; place-items: center;
+			display: grid;
+			place-items: center;
 			background: radial-gradient(circle at 30% 30%, #d6eeb1, #7ab362 75%);
 			color: #fff;
-			box-shadow: inset 0 0 0 1px rgba(255,255,255,0.5), 0 12px 24px rgba(91, 148, 62, 0.3);
+			box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.5), 0 12px 24px rgba(91, 148, 62, 0.3);
 		}
-		.privacy__seal svg { width: 38px; height: 38px; }
+
+		.privacy__seal svg {
+			width: 38px;
+			height: 38px;
+		}
 
 		.privacy h2 {
 			font-size: clamp(1.5rem, 2.6vw, 2rem);
 			margin-bottom: 10px;
 		}
-		.privacy p { font-size: 1.02rem; line-height: 1.6; }
+
+		.privacy p {
+			font-size: 1.02rem;
+			line-height: 1.6;
+		}
+
 		.privacy ul {
 			list-style: none;
 			padding: 0;
 			margin: 18px 0 0;
-			display: flex; flex-wrap: wrap; gap: 8px 18px;
+			display: flex;
+			flex-wrap: wrap;
+			gap: 8px 18px;
 			font-family: var(--font-button);
 			font-size: 0.82rem;
 			color: var(--text-muted);
 		}
+
 		.privacy ul li::before {
 			content: "✓";
 			color: var(--accent);
@@ -1002,9 +1825,14 @@
 			gap: 64px;
 			align-items: center;
 		}
+
 		@media (max-width: 880px) {
-			.origin { grid-template-columns: 1fr; gap: 36px; }
+			.origin {
+				grid-template-columns: 1fr;
+				gap: 36px;
+			}
 		}
+
 		.origin blockquote {
 			margin: 0;
 			padding: 0;
@@ -1016,6 +1844,7 @@
 			font-weight: 500;
 			font-style: italic;
 		}
+
 		.origin blockquote::before {
 			content: "“";
 			display: block;
@@ -1025,6 +1854,7 @@
 			color: var(--accent);
 			margin-bottom: 14px;
 		}
+
 		.origin cite {
 			display: block;
 			margin-top: 22px;
@@ -1043,25 +1873,115 @@
 			text-align: center;
 			padding: 110px 0 120px;
 		}
+
 		.cta h2 {
 			font-size: clamp(2rem, 4vw, 3.2rem);
 			max-width: 18ch;
 			margin: 14px auto 0;
 		}
-		.cta p { max-width: 52ch; margin: 22px auto 0; font-size: 1.05rem; }
+
+		.cta p {
+			max-width: 52ch;
+			margin: 22px auto 0;
+			font-size: 1.05rem;
+		}
+
 		.cta__buttons {
 			margin-top: 36px;
-			display: flex; justify-content: center; gap: 14px; flex-wrap: wrap;
+			display: flex;
+			justify-content: center;
+			gap: 14px;
+			flex-wrap: wrap;
+		}
+
+		/* ------------------------------------------------------------------
+		   Footer wave divider (ported from options.css)
+		   ------------------------------------------------------------------ */
+		.custom-shape-divider-bottom-1676369133 {
+			position: relative;
+			width: 100%;
+			overflow: hidden;
+			line-height: 0;
+			pointer-events: none;
+			margin-top: 6rem;
+			transform: rotate(180deg);
+		}
+
+		.custom-shape-divider-bottom-1676369133 svg {
+			position: relative;
+			display: block;
+			width: 120%;
+			margin-left: -10%;
+			height: 56px;
+		}
+
+		.custom-shape-divider-bottom-1676369133 .shape-fill {
+			fill: var(--footer-tint);
+			transition: fill 0.2s ease;
+			will-change: transform;
+		}
+
+		.custom-shape-divider-bottom-1676369133 .shape-fill:nth-of-type(1) {
+			animation: qp-wave-drift-back 13s ease-in-out infinite alternate;
+		}
+
+		.custom-shape-divider-bottom-1676369133 .shape-fill:nth-of-type(2) {
+			animation: qp-wave-drift-mid 10s ease-in-out infinite alternate;
+			animation-delay: -2s;
+		}
+
+		.custom-shape-divider-bottom-1676369133 .shape-fill:nth-of-type(3) {
+			animation: qp-wave-drift-front 7s ease-in-out infinite alternate;
+			animation-delay: -4s;
+		}
+
+		@keyframes qp-wave-drift-back {
+			from {
+				transform: translateX(-30px);
+			}
+
+			to {
+				transform: translateX(30px);
+			}
+		}
+
+		@keyframes qp-wave-drift-mid {
+			from {
+				transform: translateX(35px);
+			}
+
+			to {
+				transform: translateX(-35px);
+			}
+		}
+
+		@keyframes qp-wave-drift-front {
+			from {
+				transform: translateX(-25px);
+			}
+
+			to {
+				transform: translateX(25px);
+			}
+		}
+
+		@media (prefers-reduced-motion: reduce) {
+			.custom-shape-divider-bottom-1676369133 .shape-fill {
+				animation: none;
+			}
 		}
 
 		/* ------------------------------------------------------------------
 		   Footer
 		   ------------------------------------------------------------------ */
 		footer {
-			border-top: 1px solid var(--border);
+			background: linear-gradient(180deg, var(--footer-tint) 0%, var(--footer-tint-soft) 100%);
+			margin-top: -1px;
+			/* seal the seam with the wave above */
 			padding: 36px 0 56px;
 			color: var(--text-muted);
 		}
+
 		footer .wrap {
 			display: flex;
 			justify-content: space-between;
@@ -1069,7 +1989,11 @@
 			gap: 16px;
 			flex-wrap: wrap;
 		}
-		footer .brand__name { font-size: 0.95rem; }
+
+		footer .brand__name {
+			font-size: 0.95rem;
+		}
+
 		footer a {
 			color: var(--text-muted);
 			text-decoration: none;
@@ -1078,9 +2002,19 @@
 			margin-left: 18px;
 			transition: color 0.15s ease;
 		}
-		footer a:hover { color: var(--accent); }
-		footer p { font-size: 0.82rem; }
-		footer .footer__links { display: flex; align-items: center; }
+
+		footer a:hover {
+			color: var(--accent);
+		}
+
+		footer p {
+			font-size: 0.82rem;
+		}
+
+		footer .footer__links {
+			display: flex;
+			align-items: center;
+		}
 
 		/* ------------------------------------------------------------------
 		   Animation: fade-in on scroll
@@ -1090,14 +2024,26 @@
 			transform: translateY(18px);
 			transition: opacity 0.7s ease, transform 0.7s cubic-bezier(0.2, 0.8, 0.2, 1);
 		}
-		.reveal.is-visible { opacity: 1; transform: none; }
+
+		.reveal.is-visible {
+			opacity: 1;
+			transform: none;
+		}
 
 		@media (prefers-reduced-motion: reduce) {
-			.reveal { opacity: 1; transform: none; transition: none; }
-			html { scroll-behavior: auto; }
+			.reveal {
+				opacity: 1;
+				transform: none;
+				transition: none;
+			}
+
+			html {
+				scroll-behavior: auto;
+			}
 		}
 	</style>
 </head>
+
 <body>
 
 	<!-- =================== TOP NAV =================== -->
@@ -1105,33 +2051,34 @@
 		<div class="topnav__inner">
 			<a href="#top" class="brand">
 				<span class="brand__mark" aria-hidden="true">
-					<!-- Leaf-shaped mark, echoing the QuickPaste logo -->
-					<svg viewBox="0 0 24 24" fill="none" stroke="#5b943e" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-						<path d="M4 14c0-6 5-10 16-10 0 11-4 16-10 16-3 0-6-3-6-6z"/>
-						<path d="M4 20c4-6 8-9 14-10"/>
-					</svg>
+					<img src="icons/logo-no-text.png" alt="">
 				</span>
 				<span class="brand__name">QuickPaste</span>
 			</a>
 
 			<nav class="nav-links" aria-label="Primary">
 				<a href="#how">How it works</a>
+				<a href="#autocapture">Ctrl+C capture</a>
 				<a href="#organize">Organize</a>
 				<a href="#search">Search</a>
 				<a href="#sendto">Send to</a>
 				<a href="#privacy">Privacy</a>
-				<a class="btn btn--primary nav-links__cta" href="https://chromewebstore.google.com/detail/kdlcijllofgjnpdghojpdhjjhnnffcgb">
+				<a class="btn btn--primary nav-links__cta"
+					href="https://chromewebstore.google.com/detail/kdlcijllofgjnpdghojpdhjjhnnffcgb">
 					Add to Chrome
 				</a>
 			</nav>
 
 			<button class="theme-toggle" id="themeToggle" aria-label="Toggle dark mode" title="Toggle theme">
-				<svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-					<circle cx="12" cy="12" r="4"/>
-					<path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/>
+				<svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+					stroke-linecap="round" stroke-linejoin="round">
+					<circle cx="12" cy="12" r="4" />
+					<path
+						d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41" />
 				</svg>
-				<svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-					<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+				<svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+					stroke-linecap="round" stroke-linejoin="round">
+					<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
 				</svg>
 			</button>
 		</div>
@@ -1143,28 +2090,43 @@
 		<section class="hero">
 			<div class="wrap hero__inner">
 				<div>
-					<span class="eyebrow">Chrome extension · Local-first</span>
-					<h1>A <em>quieter</em> clipboard for the web.</h1>
+					<span class="eyebrow">Chrome extension · Local-first · v2.0</span>
+					<h1>Save the <em>good</em> parts.</h1>
 					<p class="lede">
-						QuickPaste turns any selected text or image into a saved clip with a single right-click.
-						Pin what matters, label the rest, and find anything you've ever clipped in a search box that forgives your typos. No account. No servers. Everything stays on your device.
+						QuickPaste turns any selected text or image into a saved clip with a single right-click — or
+						flip on the <strong>Ctrl+C auto-capture</strong> toggle and every copy you make is quietly
+						mirrored into your Collection. Pin what matters, label the rest, and find anything in a search
+						box that forgives your typos. No account. No servers. Everything stays on your device.
 					</p>
+
+					<a href="#autocapture" class="hero__newchip">
+						<span class="hero__newchip-text">Turn on auto-capture and
+							<kbd>Ctrl</kbd><kbd>C</kbd> will save for you</span>
+						<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+							stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+							<line x1="5" y1="12" x2="19" y2="12" />
+							<polyline points="12 5 19 12 12 19" />
+						</svg>
+					</a>
 					<div class="hero__meta">
-						<a class="btn btn--primary" href="https://chromewebstore.google.com/detail/kdlcijllofgjnpdghojpdhjjhnnffcgb">
-							<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-								<circle cx="12" cy="12" r="10"/>
-								<circle cx="12" cy="12" r="4"/>
-								<line x1="21.17" y1="8" x2="12" y2="8"/>
-								<line x1="3.95" y1="6.06" x2="8.54" y2="14"/>
-								<line x1="10.88" y1="21.94" x2="15.46" y2="14"/>
+						<a class="btn btn--primary"
+							href="https://chromewebstore.google.com/detail/kdlcijllofgjnpdghojpdhjjhnnffcgb">
+							<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+								stroke-linecap="round" stroke-linejoin="round">
+								<circle cx="12" cy="12" r="10" />
+								<circle cx="12" cy="12" r="4" />
+								<line x1="21.17" y1="8" x2="12" y2="8" />
+								<line x1="3.95" y1="6.06" x2="8.54" y2="14" />
+								<line x1="10.88" y1="21.94" x2="15.46" y2="14" />
 							</svg>
 							Add to Chrome — Free
 						</a>
 						<a class="btn btn--ghost" href="#how">
 							See how it works
-							<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-								<line x1="5" y1="12" x2="19" y2="12"/>
-								<polyline points="12 5 19 12 12 19"/>
+							<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+								stroke-linecap="round" stroke-linejoin="round">
+								<line x1="5" y1="12" x2="19" y2="12" />
+								<polyline points="12 5 19 12 12 19" />
 							</svg>
 						</a>
 					</div>
@@ -1179,8 +2141,8 @@
 							<span class="fact__label">To save anything</span>
 						</div>
 						<div class="fact">
-							<span class="fact__num"><em>∞</em> clips</span>
-							<span class="fact__label">Free, no limits</span>
+							<span class="fact__num"><em>100%</em> yours</span>
+							<span class="fact__label">Yours to keep</span>
 						</div>
 					</div>
 				</div>
@@ -1197,8 +2159,9 @@
 							</div>
 							<span class="browser__url">https://en.wikipedia.org/wiki/Walden</span>
 							<span class="browser__action" title="QuickPaste">
-								<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
-									<path d="M4 14c0-6 5-10 16-10 0 11-4 16-10 16-3 0-6-3-6-6z"/>
+								<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"
+									stroke-linecap="round" stroke-linejoin="round">
+									<path d="M4 14c0-6 5-10 16-10 0 11-4 16-10 16-3 0-6-3-6-6z" />
 								</svg>
 							</span>
 						</div>
@@ -1206,29 +2169,32 @@
 						<div class="browser__body">
 							<div class="mock-article">
 								<h4>Walden, or Life in the Woods</h4>
-								<p>I went to the woods because <span class="highlighted">I wished to live deliberately</span>, to front only the essential facts of life, and see if I could not learn what it had to teach.</p>
-								<p>Time is but the stream I go a-fishing in. I drink at it; but while I drink I see the sandy bottom and detect how shallow it is.</p>
+								<p>I went to the woods because <span class="highlighted">I wished to live
+										deliberately</span>, to front only the essential facts of life, and see if I
+									could not learn what it had to teach.</p>
+								<p>Time is but the stream I go a-fishing in. I drink at it; but while I drink I see the
+									sandy bottom and detect how shallow it is.</p>
 							</div>
 
 							<!-- Floating popup mock -->
 							<aside class="popup-mock">
 								<div class="popup-mock__bar">
 									<span class="popup-mock__logo">
-										<svg viewBox="0 0 24 24" fill="none" stroke="#5b943e" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
-											<path d="M4 14c0-6 5-10 16-10 0 11-4 16-10 16-3 0-6-3-6-6z"/>
-										</svg>
+										<img src="icons/logo-no-text.png" alt="">
 									</span>
 									<span class="popup-mock__title">QuickPaste Collection</span>
 									<span class="popup-mock__pill">
-										<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
-											<circle cx="11" cy="11" r="7"/>
-											<line x1="21" y1="21" x2="16.65" y2="16.65"/>
+										<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"
+											stroke-linecap="round" stroke-linejoin="round">
+											<circle cx="11" cy="11" r="7" />
+											<line x1="21" y1="21" x2="16.65" y2="16.65" />
 										</svg>
 									</span>
 									<span class="popup-mock__pill">
-										<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
-											<line x1="12" y1="5" x2="12" y2="19"/>
-											<line x1="5" y1="12" x2="19" y2="12"/>
+										<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"
+											stroke-linecap="round" stroke-linejoin="round">
+											<line x1="12" y1="5" x2="12" y2="19" />
+											<line x1="5" y1="12" x2="19" y2="12" />
 										</svg>
 									</span>
 								</div>
@@ -1241,10 +2207,13 @@
 								<div class="popup-mock__clips">
 									<div class="popup-mock__clip popup-mock__clip--pin">
 										<div class="popup-mock__meta">
-											<svg viewBox="0 0 24 24" fill="currentColor"><polygon points="12 2 15 9 22 9 16 14 18 21 12 17 6 21 8 14 2 9 9 9"/></svg>
+											<svg viewBox="0 0 24 24" fill="currentColor">
+												<polygon points="12 2 15 9 22 9 16 14 18 21 12 17 6 21 8 14 2 9 9 9" />
+											</svg>
 											<span>Pinned · just now</span>
 										</div>
-										<p class="popup-mock__text">I wished to live deliberately, to front only the essential facts of life…</p>
+										<p class="popup-mock__text">I wished to live deliberately, to front only the
+											essential facts of life…</p>
 										<div class="popup-mock__tagrow">
 											<span class="popup-mock__tag">research</span>
 											<span class="popup-mock__tag">essay</span>
@@ -1252,11 +2221,13 @@
 									</div>
 									<div class="popup-mock__clip">
 										<div class="popup-mock__meta"><span>en.wikipedia.org · 2 min ago</span></div>
-										<p class="popup-mock__text">Time is but the stream I go a-fishing in. I drink at it; but while I drink I see the sandy bottom…</p>
+										<p class="popup-mock__text">Time is but the stream I go a-fishing in. I drink at
+											it; but while I drink I see the sandy bottom…</p>
 									</div>
 									<div class="popup-mock__clip">
 										<div class="popup-mock__meta"><span>github.com · 14 min ago</span></div>
-										<p class="popup-mock__text">git rebase --onto main feature/quickpaste-2.0 deploy</p>
+										<p class="popup-mock__text">git rebase --onto main feature/quickpaste-2.0 deploy
+										</p>
 									</div>
 								</div>
 							</aside>
@@ -1272,24 +2243,30 @@
 				<div class="section-head reveal">
 					<span class="kicker">How it works</span>
 					<h2>Three steps. <em>That's the whole product.</em></h2>
-					<p>QuickPaste was designed to disappear. The first time you use it should feel like nothing happened — which is the point.</p>
+					<p>QuickPaste was designed to disappear. The first time you use it should feel like nothing happened
+						— which is the point.</p>
 				</div>
 
 				<div class="steps reveal">
 					<article class="step">
 						<span class="step__num">01</span>
 						<h3>Select on any page</h3>
-						<p>Highlight a sentence, a paragraph, a code block, or right-click an image. QuickPaste doesn't read your pages — only what you tell it to save.</p>
+						<p>Highlight a sentence, a paragraph, a code block, or right-click an image. QuickPaste doesn't
+							read your pages — only what you tell it to save.</p>
 					</article>
 					<article class="step">
 						<span class="step__num">02</span>
 						<h3>Right-click → Save to QuickPaste</h3>
-						<p>One menu item, two words. Multi-paragraph selections keep their structure. A subtle notification confirms the save (you can turn it off).</p>
+						<p>One menu item, two words. Multi-paragraph selections keep their structure. A subtle
+							notification confirms the save (you can turn it off).</p>
+						<p class="step__alt"><strong>Or</strong> turn on auto-capture and <kbd>Ctrl</kbd>+<kbd>C</kbd>
+							saves the clip for you — no menu needed. <a href="#autocapture">More →</a></p>
 					</article>
 					<article class="step">
 						<span class="step__num">03</span>
 						<h3>Open the popup whenever</h3>
-						<p>Click the toolbar icon or press <kbd>Alt</kbd><kbd>Shift</kbd><kbd>Q</kbd>. Your latest clips are there, copy-ready, in chronological order.</p>
+						<p>Click the toolbar icon or press <kbd>Alt</kbd><kbd>Shift</kbd><kbd>Q</kbd>. Your latest clips
+							are there, copy-ready, in chronological order.</p>
 					</article>
 				</div>
 
@@ -1298,18 +2275,136 @@
 					<div class="shot">
 						<div class="shot__frame">
 							<div class="shot__icon">
-								<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-									<path d="M3 3h7v7H3z"/><path d="M14 3h7v7h-7z"/><path d="M3 14h7v7H3z"/><path d="M14 14h7v7h-7z"/>
+								<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+									stroke-linecap="round" stroke-linejoin="round">
+									<path d="M3 3h7v7H3z" />
+									<path d="M14 3h7v7h-7z" />
+									<path d="M3 14h7v7H3z" />
+									<path d="M14 14h7v7h-7z" />
 								</svg>
 							</div>
 							<span class="shot__hint">Screenshot slot</span>
 							<span class="shot__title">The right-click capture flow</span>
 							<p class="shot__desc">
-								A real web page (any site works — try a Wikipedia article, a news story, or a docs page) with a sentence selected and the browser's right-click menu open. The cursor should be hovering the green <em>Save text to QuickPaste</em> entry, ideally with the QuickPaste leaf icon next to it. A second variation showing an image right-clicked with <em>Save image to QuickPaste</em> is great as a companion.
+								A real web page (any site works — try a Wikipedia article, a news story, or a docs page)
+								with a sentence selected and the browser's right-click menu open. The cursor should be
+								hovering the green <em>Save text to QuickPaste</em> entry, ideally with the QuickPaste
+								leaf icon next to it. A second variation showing an image right-clicked with <em>Save
+									image to QuickPaste</em> is great as a companion.
 							</p>
 							<span class="shot__filename">screenshots/01-right-click-save.png · 1600 × 1000</span>
 						</div>
-						<p class="shot__caption"><strong>Caption suggestion:</strong> The only command you need to learn. Works on text and images, on every site you visit.</p>
+						<p class="shot__caption"><strong>Caption suggestion:</strong> The only command you need to
+							learn. Works on text and images, on every site you visit.</p>
+					</div>
+				</div>
+			</div>
+		</section>
+
+		<!-- =================== AUTO-CAPTURE (NEW in 2.0) =================== -->
+		<section id="autocapture" class="autocap">
+			<div class="wrap">
+				<div class="autocap__card reveal">
+					<div class="autocap__copy">
+						<span class="eyebrow eyebrow--new">
+							<span class="eyebrow__dot" aria-hidden="true"></span>
+							New in 2.0
+						</span>
+						<h2>Or skip the right-click entirely. <em>Just press <kbd class="kbd--xl">Ctrl</kbd><kbd
+									class="kbd--xl">C</kbd>.</em></h2>
+						<p class="lede" style="margin-top: 18px;">
+							Flip the <strong>Auto-capture</strong> toggle in Settings and QuickPaste starts saving every
+							copy you make, automatically — across every tab, on every site, with the source URL
+							attached. It's the same clipboard you already use; QuickPaste just remembers what was on it.
+						</p>
+
+						<ul class="bulletlist" style="margin-top: 26px;">
+							<li>
+								<span class="bulletlist__bullet">
+									<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"
+										stroke-linecap="round" stroke-linejoin="round">
+										<polyline points="20 6 9 17 4 12" />
+									</svg>
+								</span>
+								<span><strong>Off by default.</strong> One checkbox in Settings turns it on. One
+									unchecks it.</span>
+							</li>
+							<li>
+								<span class="bulletlist__bullet">
+									<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"
+										stroke-linecap="round" stroke-linejoin="round">
+										<polyline points="20 6 9 17 4 12" />
+									</svg>
+								</span>
+								<span><strong>Per-domain blocklist.</strong> Add <code>mail.google.com</code>, your
+									bank, your password manager — copies on those sites are ignored.</span>
+							</li>
+							<li>
+								<span class="bulletlist__bullet">
+									<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"
+										stroke-linecap="round" stroke-linejoin="round">
+										<polyline points="20 6 9 17 4 12" />
+									</svg>
+								</span>
+								<span><strong>Smart dedupe.</strong> Mash <kbd>Ctrl</kbd>+<kbd>C</kbd> three times on
+									the same selection? Still one clip.</span>
+							</li>
+							<li>
+								<span class="bulletlist__bullet">
+									<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"
+										stroke-linecap="round" stroke-linejoin="round">
+										<polyline points="20 6 9 17 4 12" />
+									</svg>
+								</span>
+								<span><strong>Never leaves your device.</strong> The capture script writes through the
+									same local storage as everything else — no upload, no telemetry.</span>
+							</li>
+						</ul>
+
+						<div style="margin-top: 26px;">
+							<a href="https://chromewebstore.google.com/detail/kdlcijllofgjnpdghojpdhjjhnnffcgb"
+								class="btn btn--primary">
+								Try it — Add to Chrome
+							</a>
+						</div>
+					</div>
+
+					<div class="autocap__visual" aria-hidden="true">
+						<div class="autocap__keys">
+							<kbd class="kbd--hero">Ctrl</kbd>
+							<span class="autocap__plus">+</span>
+							<kbd class="kbd--hero">C</kbd>
+						</div>
+						<div class="autocap__arrow">
+							<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+								stroke-linecap="round" stroke-linejoin="round">
+								<line x1="12" y1="5" x2="12" y2="19" />
+								<polyline points="19 12 12 19 5 12" />
+							</svg>
+						</div>
+						<div class="autocap__chip">
+							<span class="autocap__chip-bar">
+								<span class="popup-mock__logo" style="width: 22px; height: 22px;">
+									<img src="icons/logo-no-text.png" alt="">
+								</span>
+								<span class="autocap__chip-title">Saved to QuickPaste</span>
+							</span>
+							<span class="autocap__chip-text">"…essential facts of life…"</span>
+							<span class="autocap__chip-meta">en.wikipedia.org · just now</span>
+						</div>
+
+						<div class="autocap__setting">
+							<span class="autocap__setting-row">
+								<span class="autocap__setting-check">
+									<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"
+										stroke-linecap="round" stroke-linejoin="round">
+										<polyline points="20 6 9 17 4 12" />
+									</svg>
+								</span>
+								<span>Auto-save Ctrl+C copies</span>
+							</span>
+							<span class="autocap__setting-note">Off by default · blocklist supported</span>
+						</div>
 					</div>
 				</div>
 			</div>
@@ -1321,7 +2416,9 @@
 				<div class="section-head reveal">
 					<span class="kicker">Two views, one collection</span>
 					<h2>The <em>popup</em> for now. The <em>Collection</em> for everything.</h2>
-					<p>The toolbar popup is for the clip you saved twenty seconds ago. The Collection page is for the one you saved last March. They share the same storage — so anything you save is in both, instantly.</p>
+					<p>The toolbar popup is for the clip you saved twenty seconds ago. The Collection page is for the
+						one you saved last March. They share the same storage — so anything you save is in both,
+						instantly.</p>
 				</div>
 
 				<!-- FEATURE ROW 1: Popup -->
@@ -1329,23 +2426,36 @@
 					<div class="feature-row__copy">
 						<span class="kicker">The popup</span>
 						<h2>Glance. Copy. Carry on.</h2>
-						<p>Open it with <kbd>Alt</kbd><kbd>Shift</kbd><kbd>Q</kbd> or the toolbar icon. Your most recent clips are at the top, with one-click copy, pin, edit, label, and send-to actions tucked into each card.</p>
+						<p>Open it with <kbd>Alt</kbd><kbd>Shift</kbd><kbd>Q</kbd> or the toolbar icon. Your most recent
+							clips are at the top, with one-click copy, pin, edit, label, and send-to actions tucked into
+							each card.</p>
 						<ul class="bulletlist">
 							<li>
 								<span class="bulletlist__bullet">
-									<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+									<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"
+										stroke-linecap="round" stroke-linejoin="round">
+										<polyline points="20 6 9 17 4 12" />
+									</svg>
 								</span>
-								<span><strong>Filter tabs</strong> — All, Pinned, Labeled, or clips with a source URL.</span>
+								<span><strong>Filter tabs</strong> — All, Pinned, Labeled, or clips with a source
+									URL.</span>
 							</li>
 							<li>
 								<span class="bulletlist__bullet">
-									<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+									<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"
+										stroke-linecap="round" stroke-linejoin="round">
+										<polyline points="20 6 9 17 4 12" />
+									</svg>
 								</span>
-								<span><strong>Quick save</strong> — Tap the <kbd>+</kbd> to type or paste a clip directly into the popup.</span>
+								<span><strong>Quick save</strong> — Tap the <kbd>+</kbd> to type or paste a clip
+									directly into the popup.</span>
 							</li>
 							<li>
 								<span class="bulletlist__bullet">
-									<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+									<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"
+										stroke-linecap="round" stroke-linejoin="round">
+										<polyline points="20 6 9 17 4 12" />
+									</svg>
 								</span>
 								<span><strong>Inline edit</strong> — Fix a typo without ever leaving the popup.</span>
 							</li>
@@ -1356,19 +2466,26 @@
 						<div class="shot shot--compact">
 							<div class="shot__frame">
 								<div class="shot__icon">
-									<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-										<rect x="3" y="3" width="18" height="18" rx="3"/>
-										<line x1="3" y1="9" x2="21" y2="9"/>
+									<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+										stroke-linecap="round" stroke-linejoin="round">
+										<rect x="3" y="3" width="18" height="18" rx="3" />
+										<line x1="3" y1="9" x2="21" y2="9" />
 									</svg>
 								</div>
 								<span class="shot__hint">Screenshot slot</span>
 								<span class="shot__title">The toolbar popup</span>
 								<p class="shot__desc">
-									A clean shot of the QuickPaste popup with 3–4 representative clips visible. Ideally one pinned (green left border), one with labels (research, code, etc.), and one short code snippet. Show the green top bar with the leaf logo, the <em>QuickPaste Collection</em> button in the middle, and the search + quick-save + options icons on the right. Crop tightly around the popup; transparent or subtle backdrop behind it.
+									A clean shot of the QuickPaste popup with 3–4 representative clips visible. Ideally
+									one pinned (green left border), one with labels (research, code, etc.), and one
+									short code snippet. Show the green top bar with the leaf logo, the <em>QuickPaste
+										Collection</em> button in the middle, and the search + quick-save + options
+									icons on the right. Crop tightly around the popup; transparent or subtle backdrop
+									behind it.
 								</p>
 								<span class="shot__filename">screenshots/02-popup.png · 720 × 880</span>
 							</div>
-							<p class="shot__caption"><strong>Tip:</strong> A second variant in dark mode would let you place the pair side-by-side later.</p>
+							<p class="shot__caption"><strong>Tip:</strong> A second variant in dark mode would let you
+								place the pair side-by-side later.</p>
 						</div>
 					</div>
 				</div>
@@ -1378,25 +2495,49 @@
 					<div class="feature-row__copy">
 						<span class="kicker">The collection</span>
 						<h2>Where the rest of your library lives.</h2>
-						<p>The Collection page opens in its own tab — a calmer, fuller view that adds bulk selection, advanced filters, drag-and-drop reorder, saved searches, settings, and import/export. Same clips, more room.</p>
+						<p>The Collection page opens in its own tab — a calmer, fuller view that adds bulk selection,
+							advanced filters, drag-and-drop reorder, saved searches, settings, and import/export. Same
+							clips, more room.</p>
 						<ul class="bulletlist">
 							<li>
 								<span class="bulletlist__bullet">
-									<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+									<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"
+										stroke-linecap="round" stroke-linejoin="round">
+										<polyline points="20 6 9 17 4 12" />
+									</svg>
 								</span>
-								<span><strong>Bulk select & act</strong> — Per-clip checkboxes plus Select All. Delete with a 6-second Undo toast.</span>
+								<span><strong>Bulk select & act</strong> — Per-clip checkboxes plus Select All. Delete
+									with a 6-second Undo toast.</span>
 							</li>
 							<li>
 								<span class="bulletlist__bullet">
-									<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+									<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"
+										stroke-linecap="round" stroke-linejoin="round">
+										<polyline points="20 6 9 17 4 12" />
+									</svg>
 								</span>
-								<span><strong>Drag-and-drop reorder</strong> in manual sort mode, or sort by newest, oldest, or A–Z.</span>
+								<span><strong>Drag-and-drop reorder</strong> in manual sort mode, or sort by newest,
+									oldest, or A–Z.</span>
 							</li>
 							<li>
 								<span class="bulletlist__bullet">
-									<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+									<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"
+										stroke-linecap="round" stroke-linejoin="round">
+										<polyline points="20 6 9 17 4 12" />
+									</svg>
 								</span>
-								<span><strong>JSON / Markdown</strong> export of the whole collection, and import to bring it back.</span>
+								<span><strong>Bulk copy with format</strong> — plain, with source URLs, with timestamps,
+									or as Markdown.</span>
+							</li>
+							<li>
+								<span class="bulletlist__bullet">
+									<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"
+										stroke-linecap="round" stroke-linejoin="round">
+										<polyline points="20 6 9 17 4 12" />
+									</svg>
+								</span>
+								<span><strong>JSON / Markdown</strong> export of the whole collection, and import to
+									bring it back.</span>
 							</li>
 						</ul>
 					</div>
@@ -1405,20 +2546,26 @@
 						<div class="shot shot--compact">
 							<div class="shot__frame">
 								<div class="shot__icon">
-									<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-										<rect x="3" y="4" width="18" height="4" rx="1"/>
-										<rect x="3" y="11" width="18" height="4" rx="1"/>
-										<rect x="3" y="18" width="18" height="3" rx="1"/>
+									<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+										stroke-linecap="round" stroke-linejoin="round">
+										<rect x="3" y="4" width="18" height="4" rx="1" />
+										<rect x="3" y="11" width="18" height="4" rx="1" />
+										<rect x="3" y="18" width="18" height="3" rx="1" />
 									</svg>
 								</div>
 								<span class="shot__hint">Screenshot slot</span>
 								<span class="shot__title">The Collection page</span>
 								<p class="shot__desc">
-									A wider screenshot of <code>options.html</code> showing the Collection in full: the filter / sort / label bar at the top, the search input, then a vertical list of 5–7 clips with the checkbox column on the left. Include the Select All / Bulk delete / Bulk copy buttons visible at the top, and at least one clip with a tag pill and source URL line. Keep the surrounding settings panel out of frame for this shot.
+									A wider screenshot of <code>options.html</code> showing the Collection in full: the
+									filter / sort / label bar at the top, the search input, then a vertical list of 5–7
+									clips with the checkbox column on the left. Include the Select All / Bulk delete /
+									Bulk copy buttons visible at the top, and at least one clip with a tag pill and
+									source URL line. Keep the surrounding settings panel out of frame for this shot.
 								</p>
 								<span class="shot__filename">screenshots/03-collection.png · 1600 × 1100</span>
 							</div>
-							<p class="shot__caption"><strong>Optional:</strong> Capture the Undo toast mid-animation right after a bulk delete — it's a small but charming UI detail.</p>
+							<p class="shot__caption"><strong>Optional:</strong> Capture the Undo toast mid-animation
+								right after a bulk delete — it's a small but charming UI detail.</p>
 						</div>
 					</div>
 				</div>
@@ -1431,68 +2578,126 @@
 				<div class="section-head reveal">
 					<span class="kicker">Organize</span>
 					<h2>Built for clipboards that <em>actually grow</em>.</h2>
-					<p>Pins for the clips you reuse weekly. Labels for the ones you only need during one project. Drag-to-reorder for everything else. Three lightweight ideas that compose into a system you can keep up with.</p>
+					<p>Pins for the clips you reuse weekly. Labels for the ones you only need during one project.
+						Drag-to-reorder for everything else. Three lightweight ideas that compose into a system you can
+						keep up with.</p>
 				</div>
 
 				<div class="feature-grid reveal">
 					<article class="feature-card">
 						<div class="feature-card__icon">
-							<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-								<polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+							<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+								stroke-linecap="round" stroke-linejoin="round">
+								<polygon
+									points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
 							</svg>
 						</div>
 						<h3>Pin the essentials</h3>
-						<p>Pinned clips sit at the top with a soft green border. They survive auto-prune and ride along with optional sync.</p>
+						<p>Pinned clips sit at the top with a soft green border. They survive auto-prune and ride along
+							with optional sync.</p>
 					</article>
 					<article class="feature-card">
 						<div class="feature-card__icon">
-							<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-								<path d="M20.59 13.41 13.42 20.58a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/>
-								<line x1="7" y1="7" x2="7.01" y2="7"/>
+							<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+								stroke-linecap="round" stroke-linejoin="round">
+								<path
+									d="M20.59 13.41 13.42 20.58a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z" />
+								<line x1="7" y1="7" x2="7.01" y2="7" />
 							</svg>
 						</div>
 						<h3>Label per clip</h3>
-						<p>Add free-form labels via the tag-icon button. A "Pick from existing" row suggests labels you've already used, so you stay consistent.</p>
+						<p>Add free-form labels via the tag-icon button. A "Pick from existing" row suggests labels
+							you've already used, so you stay consistent.</p>
 					</article>
 					<article class="feature-card">
 						<div class="feature-card__icon">
-							<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-								<polyline points="3 6 9 12 3 18"/>
-								<polyline points="21 6 15 12 21 18"/>
+							<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+								stroke-linecap="round" stroke-linejoin="round">
+								<polyline points="3 6 9 12 3 18" />
+								<polyline points="21 6 15 12 21 18" />
 							</svg>
 						</div>
 						<h3>Sort or arrange</h3>
-						<p>Newest first, oldest first, A–Z, or full manual order — drag any clip to a new position and the order sticks.</p>
+						<p>Newest first, oldest first, A–Z, or full manual order — drag any clip to a new position and
+							the order sticks.</p>
 					</article>
 					<article class="feature-card">
 						<div class="feature-card__icon">
-							<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-								<path d="M12 20h9"/>
-								<path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z"/>
+							<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+								stroke-linecap="round" stroke-linejoin="round">
+								<path d="M12 20h9" />
+								<path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z" />
 							</svg>
 						</div>
 						<h3>Edit in place</h3>
-						<p>Fix a typo, merge two paragraphs, or rewrite the wording. Edits save instantly to local storage — no Save button.</p>
+						<p>Fix a typo, merge two paragraphs, or rewrite the wording. Edits save instantly to local
+							storage — no Save button.</p>
 					</article>
 					<article class="feature-card">
 						<div class="feature-card__icon">
-							<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-								<path d="M3 3l18 18"/>
-								<rect x="3" y="3" width="18" height="18" rx="3"/>
+							<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+								stroke-linecap="round" stroke-linejoin="round">
+								<path d="M3 3l18 18" />
+								<rect x="3" y="3" width="18" height="18" rx="3" />
 							</svg>
 						</div>
 						<h3>Dedupe smartly</h3>
-						<p>Strict, normalized (case + whitespace insensitive), or off. Catches the "I clipped this twice last week" problem.</p>
+						<p>Strict, normalized (case + whitespace insensitive), or off. Catches the "I clipped this twice
+							last week" problem.</p>
 					</article>
 					<article class="feature-card">
 						<div class="feature-card__icon">
-							<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-								<circle cx="12" cy="12" r="10"/>
-								<polyline points="12 6 12 12 16 14"/>
+							<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+								stroke-linecap="round" stroke-linejoin="round">
+								<circle cx="12" cy="12" r="10" />
+								<polyline points="12 6 12 12 16 14" />
 							</svg>
 						</div>
 						<h3>Auto-prune (opt-in)</h3>
-						<p>Keep clips for 7, 30, or 90 days. Pinned clips are never pruned. Off by default — you decide your own retention.</p>
+						<p>Keep clips for 7, 30, or 90 days. Pinned clips are never pruned. Off by default — you decide
+							your own retention.</p>
+					</article>
+					<article class="feature-card feature-card--accent">
+						<a href="#autocapture" class="feature-card__link"
+							aria-label="Read more about Ctrl+C capture"></a>
+						<div class="feature-card__icon">
+							<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+								stroke-linecap="round" stroke-linejoin="round">
+								<rect x="3" y="6" width="18" height="14" rx="2" />
+								<path d="M7 6V4a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v2" />
+								<line x1="8" y1="12" x2="16" y2="12" />
+								<line x1="8" y1="16" x2="13" y2="16" />
+							</svg>
+						</div>
+						<span class="feature-card__badge">New</span>
+						<h3>Capture every <kbd>Ctrl</kbd>+<kbd>C</kbd></h3>
+						<p>Flip a single toggle and copies are quietly mirrored into your Collection — with a per-domain
+							blocklist to keep sensitive sites out. <a href="#autocapture">How it works →</a></p>
+					</article>
+					<article class="feature-card">
+						<div class="feature-card__icon">
+							<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+								stroke-linecap="round" stroke-linejoin="round">
+								<rect x="3" y="3" width="18" height="18" rx="2" />
+								<path d="M3 9h18" />
+								<path d="M9 21V9" />
+							</svg>
+						</div>
+						<h3>Cap the collection</h3>
+						<p>Set a soft ceiling at 100, 500, or 1000 clips. Oldest unpinned drop first; your pins stay
+							safe. Off by default.</p>
+					</article>
+					<article class="feature-card">
+						<div class="feature-card__icon">
+							<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+								stroke-linecap="round" stroke-linejoin="round">
+								<path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" />
+							</svg>
+						</div>
+						<h3>Saved searches</h3>
+						<p>Name a query+filter combo and recall it with one click. Stop re-typing
+							<code>label:research after:7d</code>.
+						</p>
 					</article>
 				</div>
 
@@ -1500,18 +2705,26 @@
 					<div class="shot">
 						<div class="shot__frame">
 							<div class="shot__icon">
-								<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-									<polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+								<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+									stroke-linecap="round" stroke-linejoin="round">
+									<polygon
+										points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
 								</svg>
 							</div>
 							<span class="shot__hint">Screenshot slot</span>
 							<span class="shot__title">A clip with pin, labels, and a source URL</span>
 							<p class="shot__desc">
-								A close-up of a single saved clip with the full anatomy visible: the timestamp (e.g. "12 min ago"), the source-page favicon and trimmed URL, two label pills (e.g. <code>research</code>, <code>essay</code>), the pin button highlighted in the accent green, and a hover-revealed action row with copy / edit / send-to / delete icons. Make this look more like a product detail shot than a full UI screenshot.
+								A close-up of a single saved clip with the full anatomy visible: the timestamp (e.g. "12
+								min ago"), the source-page favicon and trimmed URL, two label pills (e.g.
+								<code>research</code>, <code>essay</code>), the pin button highlighted in the accent
+								green, and a hover-revealed action row with copy / edit / send-to / delete icons. Make
+								this look more like a product detail shot than a full UI screenshot.
 							</p>
 							<span class="shot__filename">screenshots/04-clip-anatomy.png · 1400 × 720</span>
 						</div>
-						<p class="shot__caption"><strong>Layout tip:</strong> Add subtle callout labels in your image editor (Pin, Label, Source URL, Edit) pointing to each part — it makes the screenshot self-explanatory.</p>
+						<p class="shot__caption"><strong>Layout tip:</strong> Add subtle callout labels in your image
+							editor (Pin, Label, Source URL, Edit) pointing to each part — it makes the screenshot
+							self-explanatory.</p>
 					</div>
 				</div>
 			</div>
@@ -1524,25 +2737,38 @@
 					<div class="feature-row__copy">
 						<span class="kicker">Find anything</span>
 						<h2>Search that <em>forgives</em> your typos.</h2>
-						<p>Fuzzy matching means <code>recevied</code> still finds <code>received</code>. Match highlighting shows exactly where your query landed. Filter by label or date range. Save any combination as a one-click saved search.</p>
+						<p>Fuzzy matching means <code>recevied</code> still finds <code>received</code>. Match
+							highlighting shows exactly where your query landed. Filter by label or date range. Save any
+							combination as a one-click saved search.</p>
 						<ul class="bulletlist">
 							<li>
 								<span class="bulletlist__bullet">
-									<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+									<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"
+										stroke-linecap="round" stroke-linejoin="round">
+										<polyline points="20 6 9 17 4 12" />
+									</svg>
 								</span>
-								<span><strong>Live, fuzzy</strong> — results update as you type, with edit-distance tolerance.</span>
+								<span><strong>Live, fuzzy</strong> — results update as you type, with edit-distance
+									tolerance.</span>
 							</li>
 							<li>
 								<span class="bulletlist__bullet">
-									<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+									<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"
+										stroke-linecap="round" stroke-linejoin="round">
+										<polyline points="20 6 9 17 4 12" />
+									</svg>
 								</span>
 								<span><strong>Date filters</strong> — today, last 7/30 days, or a custom range.</span>
 							</li>
 							<li>
 								<span class="bulletlist__bullet">
-									<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+									<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"
+										stroke-linecap="round" stroke-linejoin="round">
+										<polyline points="20 6 9 17 4 12" />
+									</svg>
 								</span>
-								<span><strong>Saved searches</strong> — name a query+filter combo and recall it with one click.</span>
+								<span><strong>Saved searches</strong> — name a query+filter combo and recall it with one
+									click.</span>
 							</li>
 						</ul>
 					</div>
@@ -1551,15 +2777,20 @@
 						<div class="shot shot--compact">
 							<div class="shot__frame">
 								<div class="shot__icon">
-									<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-										<circle cx="11" cy="11" r="8"/>
-										<line x1="21" y1="21" x2="16.65" y2="16.65"/>
+									<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+										stroke-linecap="round" stroke-linejoin="round">
+										<circle cx="11" cy="11" r="8" />
+										<line x1="21" y1="21" x2="16.65" y2="16.65" />
 									</svg>
 								</div>
 								<span class="shot__hint">Screenshot slot</span>
 								<span class="shot__title">Search with match highlighting</span>
 								<p class="shot__desc">
-									A screenshot of the Collection (or popup) with the search input focused and a query typed — ideally something with an intentional typo to show fuzzy matching, e.g. <code>recevied</code>. Show 2–3 matching clips below with the matched substrings highlighted in the soft yellow highlight (<code>rgba(255,220,80,0.5)</code>). If the date / label filter chips are visible above the results, even better.
+									A screenshot of the Collection (or popup) with the search input focused and a query
+									typed — ideally something with an intentional typo to show fuzzy matching, e.g.
+									<code>recevied</code>. Show 2–3 matching clips below with the matched substrings
+									highlighted in the soft yellow highlight (<code>rgba(255,220,80,0.5)</code>). If the
+									date / label filter chips are visible above the results, even better.
 								</p>
 								<span class="shot__filename">screenshots/05-search.png · 1400 × 900</span>
 							</div>
@@ -1575,7 +2806,8 @@
 				<div class="section-head reveal">
 					<span class="kicker">Send to</span>
 					<h2>Move a clip <em>out</em> of QuickPaste in one click.</h2>
-					<p>Saved clips don't live in a silo. Push them to the tools you already use, in the format that tool expects.</p>
+					<p>Saved clips don't live in a silo. Push them to the tools you already use, in the format that tool
+						expects.</p>
 				</div>
 
 				<div class="sendto-grid reveal">
@@ -1584,21 +2816,25 @@
 							<span class="sendto__mark sendto__mark--obsidian">O</span>
 							<h3>Obsidian</h3>
 						</div>
-						<p>Pre-fills a new note in your vault via the <code>obsidian://</code> URL scheme — clip text becomes the note body, the source URL becomes a frontmatter link.</p>
+						<p>Pre-fills a new note in your vault via the <code>obsidian://</code> URL scheme — clip text
+							becomes the note body, the source URL becomes a frontmatter link.</p>
 					</article>
 					<article class="sendto">
 						<div class="sendto__head">
 							<span class="sendto__mark sendto__mark--notion">N</span>
 							<h3>Notion</h3>
 						</div>
-						<p>Copies the clip to your clipboard and opens a new Notion page in a new tab. One <kbd>Ctrl</kbd>+<kbd>V</kbd> and you're done.</p>
+						<p>Copies the clip to your clipboard and opens a new Notion page in a new tab. One
+							<kbd>Ctrl</kbd>+<kbd>V</kbd> and you're done.
+						</p>
 					</article>
 					<article class="sendto">
 						<div class="sendto__head">
 							<span class="sendto__mark sendto__mark--gdocs">G</span>
 							<h3>Google Docs</h3>
 						</div>
-						<p>Same pattern — copies the clip, opens a fresh Doc. No OAuth dance, no API keys, no surface area for the extension to abuse.</p>
+						<p>Same pattern — copies the clip, opens a fresh Doc. No OAuth dance, no API keys, no surface
+							area for the extension to abuse.</p>
 					</article>
 				</div>
 
@@ -1606,15 +2842,19 @@
 					<div class="shot">
 						<div class="shot__frame">
 							<div class="shot__icon">
-								<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-									<line x1="22" y1="2" x2="11" y2="13"/>
-									<polygon points="22 2 15 22 11 13 2 9 22 2"/>
+								<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+									stroke-linecap="round" stroke-linejoin="round">
+									<line x1="22" y1="2" x2="11" y2="13" />
+									<polygon points="22 2 15 22 11 13 2 9 22 2" />
 								</svg>
 							</div>
 							<span class="shot__hint">Screenshot slot</span>
 							<span class="shot__title">The Send-to dropdown</span>
 							<p class="shot__desc">
-								The <em>Send to…</em> dropdown open on a clip, showing the three menu items (Obsidian / Notion / Google Docs) with their logos. Capture it floating against the popup or the Collection page — the dropdown's soft shadow and the green accent on the hovered item are the visual hook.
+								The <em>Send to…</em> dropdown open on a clip, showing the three menu items (Obsidian /
+								Notion / Google Docs) with their logos. Capture it floating against the popup or the
+								Collection page — the dropdown's soft shadow and the green accent on the hovered item
+								are the visual hook.
 							</p>
 							<span class="shot__filename">screenshots/06-sendto.png · 1100 × 700</span>
 						</div>
@@ -1630,25 +2870,39 @@
 					<div class="feature-row__copy">
 						<span class="kicker">Looks and feel</span>
 						<h2>Light, dark, and <em>made to be lived in</em>.</h2>
-						<p>Real dark mode (not just an inverted palette). A customisable accent colour. Compact or comfortable density. Toggle the source-URL line. Adjustable preview length. The UI bends to your reading habits, not the other way around.</p>
+						<p>Real dark mode (not just an inverted palette). A customisable accent colour. Compact or
+							comfortable density. Toggle the source-URL line. Adjustable preview length. The UI bends to
+							your reading habits, not the other way around.</p>
 						<ul class="bulletlist">
 							<li>
 								<span class="bulletlist__bullet">
-									<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+									<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"
+										stroke-linecap="round" stroke-linejoin="round">
+										<polyline points="20 6 9 17 4 12" />
+									</svg>
 								</span>
-								<span><strong>Fraunces · Inter · Sora</strong> — a serif for headings, a sans for body, and a humanist sans for buttons.</span>
+								<span><strong>Fraunces · Inter · Sora</strong> — a serif for headings, a sans for body,
+									and a humanist sans for buttons.</span>
 							</li>
 							<li>
 								<span class="bulletlist__bullet">
-									<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+									<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"
+										stroke-linecap="round" stroke-linejoin="round">
+										<polyline points="20 6 9 17 4 12" />
+									</svg>
 								</span>
-								<span><strong>System-aware</strong> theme that respects <code>prefers-color-scheme</code> on first launch.</span>
+								<span><strong>System-aware</strong> theme that respects
+									<code>prefers-color-scheme</code> on first launch.</span>
 							</li>
 							<li>
 								<span class="bulletlist__bullet">
-									<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+									<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"
+										stroke-linecap="round" stroke-linejoin="round">
+										<polyline points="20 6 9 17 4 12" />
+									</svg>
 								</span>
-								<span><strong>Reduced-motion respectful</strong> — the floating logo holds still when you ask it to.</span>
+								<span><strong>Reduced-motion respectful</strong> — the floating logo holds still when
+									you ask it to.</span>
 							</li>
 						</ul>
 					</div>
@@ -1656,17 +2910,24 @@
 						<div class="shot shot--compact">
 							<div class="shot__frame">
 								<div class="shot__icon">
-									<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-										<circle cx="12" cy="12" r="5"/>
-										<line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/>
-										<line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
-										<line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/>
+									<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+										stroke-linecap="round" stroke-linejoin="round">
+										<circle cx="12" cy="12" r="5" />
+										<line x1="12" y1="1" x2="12" y2="3" />
+										<line x1="12" y1="21" x2="12" y2="23" />
+										<line x1="4.22" y1="4.22" x2="5.64" y2="5.64" />
+										<line x1="18.36" y1="18.36" x2="19.78" y2="19.78" />
+										<line x1="1" y1="12" x2="3" y2="12" />
+										<line x1="21" y1="12" x2="23" y2="12" />
 									</svg>
 								</div>
 								<span class="shot__hint">Screenshot slot</span>
 								<span class="shot__title">Light vs. dark, side by side</span>
 								<p class="shot__desc">
-									Two identical popup (or Collection) screenshots placed side-by-side in a single image: same clips, same scroll position, one in light theme and one in dark. The exact same data in both makes the theme work easy to read at a glance. Use a 1:1 horizontal split with a faint divider down the middle.
+									Two identical popup (or Collection) screenshots placed side-by-side in a single
+									image: same clips, same scroll position, one in light theme and one in dark. The
+									exact same data in both makes the theme work easy to read at a glance. Use a 1:1
+									horizontal split with a faint divider down the middle.
 								</p>
 								<span class="shot__filename">screenshots/07-themes.png · 1600 × 900</span>
 							</div>
@@ -1676,15 +2937,21 @@
 
 				<div class="privacy reveal" id="privacy">
 					<div class="privacy__seal" aria-hidden="true">
-						<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-							<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
-							<polyline points="9 12 11 14 15 10"/>
+						<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+							stroke-linecap="round" stroke-linejoin="round">
+							<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+							<polyline points="9 12 11 14 15 10" />
 						</svg>
 					</div>
 					<div>
 						<span class="kicker">Privacy</span>
 						<h2>Your clips never leave your machine. Period.</h2>
-						<p>QuickPaste has no servers and no analytics. The optional Chrome Sync mirror uses <em>your</em> Google account — the developer has no access to your data. The <code>&lt;all_urls&gt;</code> permission exists so the right-click menu works on every site; the extension doesn't read pages on its own.</p>
+						<p>QuickPaste has no servers and no analytics. The optional Chrome Sync mirror uses
+							<em>your</em> Google account — the developer has no access to your data. The
+							<code>&lt;all_urls&gt;</code> permission exists so the right-click menu works on every site
+							and so the opt-in <strong>Ctrl+C auto-capture</strong> can listen for your own copy events
+							when you enable it. The extension does not read page content on its own.
+						</p>
 						<ul>
 							<li>No account</li>
 							<li>No telemetry</li>
@@ -1705,15 +2972,23 @@
 						<span class="kicker">The origin</span>
 						<h2 style="margin-top: 14px;">A Harvard CS50 project that just kept growing.</h2>
 						<p style="margin-top: 18px; font-size: 1.02rem;">
-							v1.0 started as a CS50x final project — friends had asked for "something fast and easy, to select some text and save it, like taking notes as you go, but no logging in, no account, really simple and fast." That brief is still the north star.
+							v1.0 started as a CS50x final project — friends had asked for "something fast and easy, to
+							select some text and save it, like taking notes as you go, but no logging in, no account,
+							really simple and fast." That brief is still the north star.
 						</p>
 						<p style="margin-top: 14px; font-size: 1.02rem;">
-							v2.0 (2026) was a near-complete rewrite around the same core idea, but with the things four years of using it taught us: image clips, pins, labels, drag-and-drop, fuzzy search, in-place edit, bulk operations with undo, opt-in auto-capture, sync, send-to integrations, JSON/Markdown import/export, retention rules, and a proper light/dark theme.
+							v2.0 (2026) was a near-complete rewrite around the same core idea, with the things four
+							years of using it taught us. The headline addition: <strong>opt-in
+								<kbd>Ctrl</kbd>+<kbd>C</kbd> auto-capture</strong> with a per-domain blocklist, so you
+							never have to remember to right-click. Plus image clips, pins, labels, drag-and-drop, fuzzy
+							search, in-place edit, bulk operations with undo, Chrome Sync, send-to integrations,
+							JSON/Markdown import/export, retention rules, and a proper light/dark theme.
 						</p>
 					</div>
 					<div>
 						<blockquote>
-							Build something of interest to you, that solves an actual problem, that impacts your community.
+							Build something of interest to you, that solves an actual problem, that impacts your
+							community.
 							<cite>— CS50x final project brief</cite>
 						</blockquote>
 					</div>
@@ -1726,18 +3001,23 @@
 			<div class="wrap reveal">
 				<span class="eyebrow">Free · No account · No data collection</span>
 				<h2>Add QuickPaste to Chrome, save a sentence, see what happens.</h2>
-				<p>It works on every site, takes one right-click to learn, and stays out of your way until you need it.</p>
+				<p>It works on every site, takes one right-click to learn, and stays out of your way until you need it.
+				</p>
 				<div class="cta__buttons">
-					<a class="btn btn--primary" href="https://chromewebstore.google.com/detail/kdlcijllofgjnpdghojpdhjjhnnffcgb">
-						<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-							<circle cx="12" cy="12" r="10"/>
-							<circle cx="12" cy="12" r="4"/>
+					<a class="btn btn--primary"
+						href="https://chromewebstore.google.com/detail/kdlcijllofgjnpdghojpdhjjhnnffcgb">
+						<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+							stroke-linecap="round" stroke-linejoin="round">
+							<circle cx="12" cy="12" r="10" />
+							<circle cx="12" cy="12" r="4" />
 						</svg>
 						Add to Chrome
 					</a>
 					<a class="btn btn--ghost" href="https://github.com/cristiangabriel88/quickpaste">
-						<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-							<path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"/>
+						<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+							stroke-linecap="round" stroke-linejoin="round">
+							<path
+								d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22" />
 						</svg>
 						View on GitHub
 					</a>
@@ -1746,19 +3026,32 @@
 		</section>
 	</main>
 
+	<!-- =================== FOOTER WAVE =================== -->
+	<div class="custom-shape-divider-bottom-1676369133" aria-hidden="true">
+		<svg data-name="Layer 1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 120" preserveAspectRatio="none">
+			<path
+				d="M0,0V46.29c47.79,22.2,103.59,32.17,158,28,70.36-5.37,136.33-33.31,206.8-37.5C438.64,32.43,512.34,53.67,583,72.05c69.27,18,138.3,24.88,209.4,13.08,36.15-6,69.85-17.84,104.45-29.34C989.49,25,1113-14.29,1200,52.47V0Z"
+				opacity=".25" class="shape-fill"></path>
+			<path
+				d="M0,0V15.81C13,36.92,27.64,56.86,47.69,72.05,99.41,111.27,165,111,224.58,91.58c31.15-10.15,60.09-26.07,89.67-39.8,40.92-19,84.73-46,130.83-49.67,36.26-2.85,70.9,9.42,98.6,31.56,31.77,25.39,62.32,62,103.63,73,40.44,10.79,81.35-6.69,119.13-24.28s75.16-39,116.92-43.05c59.73-5.85,113.28,22.88,168.9,38.84,30.2,8.66,59,6.17,87.09-7.5,22.43-10.89,48-26.93,60.65-49.24V0Z"
+				opacity=".5" class="shape-fill"></path>
+			<path
+				d="M0,0V5.63C149.93,59,314.09,71.32,475.83,42.57c43-7.64,84.23-20.12,127.61-26.46,59-8.63,112.48,12.24,165.56,35.4C827.93,77.22,886,95.24,951.2,90c86.53-7,172.46-45.71,248.8-84.81V0Z"
+				class="shape-fill"></path>
+		</svg>
+	</div>
+
 	<!-- =================== FOOTER =================== -->
 	<footer>
 		<div class="wrap">
 			<div class="brand">
 				<span class="brand__mark" aria-hidden="true">
-					<svg viewBox="0 0 24 24" fill="none" stroke="#5b943e" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-						<path d="M4 14c0-6 5-10 16-10 0 11-4 16-10 16-3 0-6-3-6-6z"/>
-						<path d="M4 20c4-6 8-9 14-10"/>
-					</svg>
+					<img src="icons/logo-no-text.png" alt="">
 				</span>
 				<span>
 					<span class="brand__name">QuickPaste</span>
-					<p style="font-size: 0.78rem; margin-top: 2px;">by Constantinescu Cristian-Gabriel · Released for personal & educational use</p>
+					<p style="font-size: 0.78rem; margin-top: 2px;">by Constantinescu Cristian-Gabriel · Released for
+						personal & educational use</p>
 				</span>
 			</div>
 			<nav class="footer__links" aria-label="Footer">
@@ -1790,7 +3083,7 @@
 			toggle.addEventListener('click', () => {
 				const next = root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
 				root.setAttribute('data-theme', next);
-				try { localStorage.setItem('qp-presentation-theme', next); } catch {}
+				try { localStorage.setItem('qp-presentation-theme', next); } catch { }
 			});
 		})();
 
@@ -1819,4 +3112,5 @@
 		})();
 	</script>
 </body>
+
 </html>
