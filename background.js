@@ -1,4 +1,4 @@
-importScripts("lib/storage.js", "lib/format.js", "lib/settings.js", "lib/sync.js");
+importScripts("lib/storage.js", "lib/format.js", "lib/settings.js", "lib/sync.js", "lib/autoCapture.js");
 
 const OFFSCREEN_PATH = "offscreen.html";
 const PRUNE_ALARM = "qp-prune-old-clips";
@@ -21,7 +21,9 @@ chrome.runtime.onInstalled.addListener(() => {
   // Backfill missing id/savedAt/pinned/tags on any pre-existing clips and apply
   // settings migration on first install / upgrade.
   QPStorage.getClips();
-  QPSettings.get();
+  QPSettings.get().then(function (settings) {
+    QPAutoCapture.ensureRegisteredIfEnabled(settings);
+  });
   ensurePruneAlarm();
   QPSync.startAutoPush();
   QPSync.pull();
@@ -31,9 +33,25 @@ chrome.runtime.onStartup.addListener(() => {
   QPStorage.getClips();
   ensurePruneAlarm();
   runPruneNow();
+  QPSettings.get().then(function (settings) {
+    QPAutoCapture.ensureRegisteredIfEnabled(settings);
+  });
   QPSync.startAutoPush();
   QPSync.pull();
 });
+
+// If the user revokes host access from chrome://extensions while the browser
+// is running, drop the registration immediately so we don't hold dead state.
+if (chrome.permissions && chrome.permissions.onRemoved) {
+  chrome.permissions.onRemoved.addListener(function (perms) {
+    let origins = (perms && perms.origins) || [];
+    if (origins.indexOf("<all_urls>") !== -1) {
+      QPSettings.set({ autoCapture: false }).then(function () {
+        QPAutoCapture.unregisterScript();
+      });
+    }
+  });
+}
 
 function ensurePruneAlarm() {
   chrome.alarms.get(PRUNE_ALARM, function (existing) {

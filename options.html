@@ -153,7 +153,7 @@
 						<span class="setting-field__label">Blocklist (one domain per line)</span>
 						<textarea class="setting-field__control setting-field__textarea" rows="4" placeholder="mail.google.com&#10;1password.com" data-setting="autoCaptureBlocklist" data-setting-control="textarea-list"></textarea>
 					</label>
-					<p class="setting-group__note">Copies on the listed domains will be ignored. Off by default; the extension still needs <em>Read and change all your data on all websites</em> for the capture script to attach.</p>
+					<p class="setting-group__note">Copies on the listed domains will be ignored. Off by default. Turning this on will ask Chrome for permission to read pages on every site you visit, so the capture script can listen for your <kbd>Ctrl</kbd>+<kbd>C</kbd> events. You can revoke that permission anytime from <code>chrome://extensions</code>.</p>
 				</div>
 			</details>
 
@@ -551,6 +551,7 @@
 	<script src="lib/exporter.js"></script>
 	<script src="lib/sendto.js"></script>
 	<script src="lib/sync.js"></script>
+	<script src="lib/autoCapture.js"></script>
 	<script src="options.js"></script>
 </body>
 

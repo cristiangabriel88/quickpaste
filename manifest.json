@@ -9,17 +9,11 @@
 		"notifications",
 		"clipboardWrite",
 		"offscreen",
-		"alarms"
+		"alarms",
+		"scripting"
 	],
-	"host_permissions": [
+	"optional_host_permissions": [
 		"<all_urls>"
-	],
-	"content_scripts": [
-		{
-			"matches": ["<all_urls>"],
-			"js": ["content/capture.js"],
-			"run_at": "document_idle"
-		}
 	],
 	"icons": {
 		"16": "/icons/logo16x16.png",

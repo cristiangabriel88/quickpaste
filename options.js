@@ -106,7 +106,33 @@ function bindSettingsPanel() {
     let el = event.target;
     if (!el || !el.dataset || !el.dataset.setting) return;
     if (el.dataset.settingControl === "radio" && !el.checked) return;
-    QPSettings.set({ [el.dataset.setting]: readSettingValue(el) });
+
+    let key = el.dataset.setting;
+
+    // Auto-capture needs <all_urls> host permission, requested at toggle time
+    // (Chrome's native prompt only fires inside a user gesture).
+    if (key === "autoCapture") {
+      let nextValue = !!el.checked;
+      if (nextValue) {
+        QPAutoCapture.enable().then(function (result) {
+          if (!result.granted) {
+            el.checked = false;
+            if (typeof QPToast !== "undefined" && QPToast.show) {
+              QPToast.show("Auto-capture needs permission to read pages — not granted.");
+            }
+            return;
+          }
+          QPSettings.set({ autoCapture: true });
+        });
+      } else {
+        QPAutoCapture.disable().then(function () {
+          QPSettings.set({ autoCapture: false });
+        });
+      }
+      return;
+    }
+
+    QPSettings.set({ [key]: readSettingValue(el) });
   });
   panel.querySelectorAll("[data-reset]").forEach(function (btn) {
     btn.addEventListener("click", function () {
